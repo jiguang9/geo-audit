@@ -244,7 +244,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     .report-header {
       background: var(--navy);
       color: #ffffff;
-      padding: 52px 48px 44px;
+      padding: 80px 48px 72px;
       text-align: center;
     }
 
@@ -525,10 +525,20 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     .diag-score-tag.unk  { background: #f1f5f9; color: var(--muted); }
 
     .chevron {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.06);
+      border: 1px solid rgba(0,0,0,.1);
       color: var(--muted);
-      font-size: 12px;
-      transition: transform .2s;
+      font-size: 11px;
+      flex-shrink: 0;
+      transition: transform .2s, background .15s;
     }
+    .diag-header:hover .chevron { background: rgba(0,0,0,.1); }
     .diag-header.open .chevron { transform: rotate(180deg); }
 
     .diag-body { padding: 6px 0; display: none; }
