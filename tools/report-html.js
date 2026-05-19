@@ -525,21 +525,16 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     .diag-score-tag.unk  { background: #f1f5f9; color: var(--muted); }
 
     .chevron {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
-      background: rgba(0,0,0,.06);
-      border: 1px solid rgba(0,0,0,.1);
-      color: var(--muted);
-      font-size: 11px;
+      color: #b0b8c4;
+      font-size: 16px;
+      font-weight: 300;
       flex-shrink: 0;
-      transition: transform .2s, background .15s;
+      line-height: 1;
+      transition: transform .2s;
+      user-select: none;
     }
-    .diag-header:hover .chevron { background: rgba(0,0,0,.1); }
-    .diag-header.open .chevron { transform: rotate(180deg); }
+    .diag-header:hover .chevron { color: #8a929e; }
+    .diag-header.open .chevron { transform: rotate(90deg); }
 
     .diag-body { padding: 6px 0; display: none; }
     .diag-body.open { display: block; }
@@ -750,7 +745,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
         </div>
         <div class="diag-header-right">
           <span class="diag-score-tag ${robotsResult?.accessible ? 'ok' : 'bad'}">${robotsResult?.accessible ? '可访问' : '不可访问'}</span>
-          <span class="chevron">▾</span>
+          <span class="chevron">›</span>
         </div>
       </div>
       <div class="diag-body open">
@@ -767,7 +762,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
           <span class="diag-header-title">llms.txt</span>
         </div>
         <div class="diag-header-right">
-          <span class="chevron">▾</span>
+          <span class="chevron">›</span>
         </div>
       </div>
       <div class="diag-body">
@@ -784,7 +779,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
         </div>
         <div class="diag-header-right">
           <span class="diag-score-tag ${cs.found && cs.found.length ? 'ok' : 'bad'}">${cs.found && cs.found.length ? `${cs.found.length} 项` : '未发现'}</span>
-          <span class="chevron">▾</span>
+          <span class="chevron">›</span>
         </div>
       </div>
       <div class="diag-body">
@@ -807,7 +802,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
         </div>
         <div class="diag-header-right">
           <span class="diag-score-tag ${['ok','warn','bad'][d.structure.raw/d.structure.max >= 0.7 ? 0 : d.structure.raw/d.structure.max >= 0.4 ? 1 : 2]}">${d.structure.raw}/${d.structure.max}</span>
-          <span class="chevron">▾</span>
+          <span class="chevron">›</span>
         </div>
       </div>
       <div class="diag-body">
@@ -828,7 +823,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
         </div>
         <div class="diag-header-right">
           <span class="diag-score-tag ${['ok','warn','bad'][d.authority.raw/d.authority.max >= 0.7 ? 0 : d.authority.raw/d.authority.max >= 0.4 ? 1 : 2]}">${d.authority.raw}/${d.authority.max}</span>
-          <span class="chevron">▾</span>
+          <span class="chevron">›</span>
         </div>
       </div>
       <div class="diag-body">
@@ -848,7 +843,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
         </div>
         <div class="diag-header-right">
           <span class="diag-score-tag unk">${presenceScore !== null ? `${presenceScore}/25` : '待评估'}</span>
-          <span class="chevron">▾</span>
+          <span class="chevron">›</span>
         </div>
       </div>
       <div class="diag-body">
