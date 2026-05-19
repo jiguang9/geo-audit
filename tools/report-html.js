@@ -244,7 +244,8 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     .report-header {
       background: var(--navy);
       color: #ffffff;
-      padding: 36px 48px 32px;
+      padding: 52px 48px 44px;
+      text-align: center;
     }
 
     .report-tag {
@@ -253,17 +254,17 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
       letter-spacing: .18em;
       text-transform: uppercase;
       color: rgba(255,255,255,.45);
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
 
     .report-brand {
       font-family: 'Orbitron', sans-serif;
-      font-size: clamp(22px, 4vw, 38px);
+      font-size: clamp(26px, 5vw, 48px);
       font-weight: 900;
       color: #ffffff;
       letter-spacing: -.01em;
       line-height: 1.1;
-      margin-bottom: 10px;
+      margin-bottom: 16px;
     }
 
     .url-bar {
@@ -273,11 +274,11 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
       background: rgba(255,255,255,.07);
       border: 1px solid rgba(255,255,255,.1);
       border-radius: 6px;
-      padding: 7px 14px;
+      padding: 8px 18px;
       font-family: 'DM Mono', monospace;
       font-size: 12px;
       color: rgba(255,255,255,.65);
-      margin-bottom: 16px;
+      margin-bottom: 20px;
     }
 
     .url-bar::before { content: '🌐'; font-size: 13px; }
@@ -285,6 +286,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     .header-meta {
       display: flex;
       align-items: center;
+      justify-content: center;
       gap: 16px;
       flex-wrap: wrap;
     }
@@ -296,7 +298,7 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     }
 
     .level-tag {
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 20px;
       background: rgba(255,255,255,.1);
       border: 1px solid rgba(255,255,255,.15);
