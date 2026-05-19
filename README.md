@@ -11,7 +11,7 @@ Traditional SEO gets you ranked. GEO gets you **cited**.
 ## Install
 
 ```bash
-npx skills add https://github.com/weiguang8412/geo-audit --skill geo-audit
+npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 ```
 
 Works with: Claude Code, Codex, OpenClaw, Hermes, Cursor, Windsurf

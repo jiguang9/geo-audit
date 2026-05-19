@@ -166,15 +166,11 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   const knownTotal = structure.raw + authority.raw + technical.raw;
   const knownMax = 75;
 
-  let total, totalMax;
-  if (presenceKnown) {
-    total = knownTotal + presence.raw;
-    totalMax = 100;
-  } else {
-    // Scale known dimensions to 100 for display
-    total = Math.round((knownTotal / knownMax) * 75); // out of 75, presence unknown
-    totalMax = 75;
-  }
+  // Always report out of 100 for consistency.
+  // When presence is unknown the total is the raw sum of the 3 known dimensions (max 75).
+  // The caller can check presenceUnknown to display the correct context.
+  const total = presenceKnown ? knownTotal + presence.raw : knownTotal;
+  const totalMax = 100;
 
   const level = total <= 15 ? 1 : total <= 30 ? 2 : total <= 50 ? 3 : total <= 65 ? 4 : 5;
 

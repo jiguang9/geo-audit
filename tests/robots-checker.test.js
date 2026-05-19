@@ -46,8 +46,8 @@ test('parseCrawlerStatus — allowed when * allows all and bot not mentioned', (
   assert.equal(parseCrawlerStatus(ALLOW_ALL, 'GPTBot'), 'not-mentioned');
 });
 
-test('parseCrawlerStatus — not-mentioned when * blocks all and bot not mentioned', () => {
-  assert.equal(parseCrawlerStatus(BLOCK_ALL, 'GPTBot'), 'not-mentioned');
+test('parseCrawlerStatus — blocked when * blocks all and bot not mentioned (inherits global block)', () => {
+  assert.equal(parseCrawlerStatus(BLOCK_ALL, 'GPTBot'), 'blocked');
 });
 
 test('parseCrawlerStatus — blocked when specific bot has Disallow: /', () => {

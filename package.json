@@ -1,5 +1,5 @@
 {
-  "name": "@weiguang8412/geo-audit",
+  "name": "@jiguang9/geo-audit",
   "version": "1.0.0",
   "description": "GEO (Generative Engine Optimization) diagnostic skill — audit AI search visibility across ChatGPT, Perplexity, Claude, DeepSeek, Doubao and more",
   "bin": {
@@ -20,7 +20,7 @@
     "claude-code",
     "codex"
   ],
-  "author": "weiguang8412",
+  "author": "jiguang9",
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"

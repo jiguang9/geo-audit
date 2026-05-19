@@ -4,7 +4,7 @@ const https = require('https');
 const http = require('http');
 const { URL } = require('url');
 
-const DEFAULT_UA = 'geo-audit/1.0 (+https://github.com/weiguang8412/geo-audit)';
+const DEFAULT_UA = 'geo-audit/1.0 (+https://github.com/jiguang9/geo-audit)';
 const DEFAULT_TIMEOUT = 10000;
 
 function fetchText(url, options = {}, redirectCount = 0) {
@@ -31,6 +31,11 @@ function fetchText(url, options = {}, redirectCount = 0) {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
         const next = new URL(res.headers.location, url).toString();
         res.resume();
+        // SSRF guard: validate redirect target before following
+        const { isPublicUrl } = require('../shared/url.js');
+        if (!isPublicUrl(next)) {
+          return reject(new Error(`Redirect blocked — target is not a public URL: ${next}`));
+        }
         return fetchText(next, options, redirectCount + 1).then(resolve).catch(reject);
       }
 

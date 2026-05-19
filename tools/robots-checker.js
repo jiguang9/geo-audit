@@ -23,7 +23,10 @@ function parseCrawlerStatus(robotsTxt, crawlerName) {
   const lines = robotsTxt.split(/\r?\n/).map(l => l.split('#')[0].trim()).filter(Boolean);
 
   let currentAgents = [];
+  let inRuleSection = false; // flips true once a Disallow/Allow line is seen in the current block
+
   const specificRules = { disallows: [], allows: [] };
+  const globalRules   = { disallows: [], allows: [] }; // User-agent: *
   let foundSpecific = false;
 
   for (const line of lines) {
@@ -31,9 +34,10 @@ function parseCrawlerStatus(robotsTxt, crawlerName) {
 
     if (lower.startsWith('user-agent:')) {
       const agent = line.slice('user-agent:'.length).trim().toLowerCase();
-      // Start of a new agent block resets tracking
-      if (currentAgents.length > 0 && agent !== currentAgents[currentAgents.length - 1]) {
+      // A new User-agent line after rules = new block; reset accumulator
+      if (inRuleSection) {
         currentAgents = [];
+        inRuleSection = false;
       }
       currentAgents.push(agent);
       if (agent === target) foundSpecific = true;
@@ -41,27 +45,33 @@ function parseCrawlerStatus(robotsTxt, crawlerName) {
     }
 
     if (lower.startsWith('disallow:') || lower.startsWith('allow:')) {
+      inRuleSection = true;
       const isAllow = lower.startsWith('allow:');
       const path = line.slice(line.indexOf(':') + 1).trim();
+
       if (currentAgents.includes(target)) {
         if (isAllow) specificRules.allows.push(path);
         else specificRules.disallows.push(path);
       }
+      if (currentAgents.includes('*')) {
+        if (isAllow) globalRules.allows.push(path);
+        else globalRules.disallows.push(path);
+      }
     }
   }
 
-  if (!foundSpecific) return 'not-mentioned';
+  // Use specific rules when the crawler is explicitly named
+  if (foundSpecific) {
+    if (specificRules.disallows.includes('/')) return 'blocked';
+    if (specificRules.allows.includes('/')) return 'allowed';
+    if (specificRules.disallows.length > 0) return 'allowed'; // partial restriction, not a total block
+    return 'allowed';
+  }
 
-  // Disallow: / or Disallow: (empty catches everything in some parsers — skip empty)
-  if (specificRules.disallows.includes('/')) return 'blocked';
-
-  // Allow: / overrides any disallow
-  if (specificRules.allows.includes('/')) return 'allowed';
-
-  // Has disallows but not a total block
-  if (specificRules.disallows.length > 0) return 'allowed'; // partial restrictions, not fully blocked
-
-  return 'allowed';
+  // No specific rules — inherit global (*) rules
+  // A total global block (Disallow: /) applies to every crawler not explicitly named
+  if (globalRules.disallows.includes('/')) return 'blocked';
+  return 'not-mentioned';
 }
 
 async function checkRobots(siteUrl) {

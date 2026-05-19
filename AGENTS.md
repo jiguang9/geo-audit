@@ -10,7 +10,7 @@ Claude Code, Codex, OpenClaw, Hermes, Cursor, Windsurf, GitHub Copilot
 ## Installation
 
 ```bash
-npx skills add https://github.com/weiguang8412/geo-audit --skill geo-audit
+npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 ```
 
 ## Skills

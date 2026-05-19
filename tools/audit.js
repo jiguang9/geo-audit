@@ -66,7 +66,15 @@ async function runAudit(siteUrl, context) {
   ]);
 
   // Third-party presence requires user-provided evidence — not automated
-  const presenceEvidence = context?.presence ? JSON.parse(context.presence) : {};
+  let presenceEvidence = {};
+  if (context?.presence) {
+    try {
+      presenceEvidence = JSON.parse(context.presence);
+    } catch (_) {
+      // presence field is free-text (e.g. "有知乎，有媒体报道") — treat as unknown
+      presenceEvidence = {};
+    }
+  }
 
   const scoreData = computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence });
 
@@ -108,7 +116,7 @@ async function main() {
     if (format === 'json') {
       console.log(JSON.stringify(result, null, 2));
     } else {
-      const report = renderReport(result.scoreData, result);
+      const report = renderReport(result.scoreData, { ...result, url: result.url });
       console.log(report);
     }
   } catch (err) {

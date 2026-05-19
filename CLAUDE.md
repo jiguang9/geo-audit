@@ -14,7 +14,7 @@ LLM SEO, AI search optimization, 生成式引擎优化, AI 搜索诊断, 被 AI 
 ## Quick Start
 
 ```bash
-npx skills add https://github.com/weiguang8412/geo-audit --skill geo-audit
+npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 ```
 
 ## Running Tools (Claude Code)
