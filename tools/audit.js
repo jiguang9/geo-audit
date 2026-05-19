@@ -125,7 +125,23 @@ async function main() {
       const date = new Date().toISOString().slice(0, 10);
       const outFile = path.join(process.cwd(), `geo-audit-${domain}-${date}.html`);
       fs.writeFileSync(outFile, html, 'utf8');
-      console.log(`HTML report written to: ${outFile}`);
+
+      // Print compact summary to stdout so Agent can show key results inline
+      const d = result.scoreData.dimensions;
+      const presenceNote = result.scoreData.presenceUnknown ? ' (presence not assessed)' : '';
+      console.log([
+        `## GEO Audit — ${result.context?.brand || result.url}`,
+        `**GEO Score: ${result.scoreData.total}/100${presenceNote} · Level ${result.scoreData.level}**`,
+        '',
+        `| Dimension | Score |`,
+        `|-----------|-------|`,
+        `| Structure extractability | ${d.structure.raw}/${d.structure.max} |`,
+        `| Authority / credibility  | ${d.authority.raw}/${d.authority.max} |`,
+        `| Third-party presence     | ${d.presence.raw !== null ? d.presence.raw : '?'}/${d.presence.max} |`,
+        `| Technical accessibility  | ${d.technical.raw}/${d.technical.max} |`,
+        '',
+        `**HTML report:** \`${outFile}\``,
+      ].join('\n'));
     } else {
       const report = renderReport(result.scoreData, { ...result, url: result.url });
       console.log(report);

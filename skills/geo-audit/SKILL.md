@@ -54,12 +54,14 @@ node tools/schema-inspector.js <url>
 node tools/content-structure.js <url>
 ```
 
-Or run all at once with the main entry:
+Or run all at once with the main entry (always use `--html` to generate the visual report):
 
 ```bash
-node tools/audit.js <url>           # Markdown report
+node tools/audit.js <url> --html    # HTML report written to file + summary printed
 node tools/audit.js <url> --json    # JSON for further processing
 ```
+
+After running with `--html`, share the file path with the user so they can open it in a browser.
 
 ## Phase 2 — Three-Pillar Evaluation
 
