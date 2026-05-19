@@ -18,7 +18,8 @@ const { inspectSchema } = require('./schema-inspector.js');
 const { checkContentStructure } = require('./content-structure.js');
 const { computeGeoScore } = require('./score.js');
 const { renderReport } = require('./report.js');
-const { normalizeUrl, isPublicUrl } = require('./shared/url.js');
+const { renderHtmlReport } = require('./report-html.js');
+const { normalizeUrl, isPublicUrl, getHostname } = require('./shared/url.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -26,7 +27,8 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   const url = args.find(a => !a.startsWith('--'));
   const json = args.includes('--json');
-  const format = json ? 'json' : 'markdown';
+  const html = args.includes('--html');
+  const format = json ? 'json' : html ? 'html' : 'markdown';
   return { url, format };
 }
 
@@ -89,11 +91,13 @@ async function main() {
       'geo-audit — GEO (Generative Engine Optimization) diagnostic tool',
       '',
       'Usage:',
-      '  node tools/audit.js <url>          # Markdown report',
-      '  node tools/audit.js <url> --json   # JSON output',
+      '  node tools/audit.js <url>          # Markdown report (stdout)',
+      '  node tools/audit.js <url> --json   # JSON output (stdout)',
+      '  node tools/audit.js <url> --html   # HTML report (written to file)',
       '',
       'Examples:',
       '  node tools/audit.js https://example.com',
+      '  node tools/audit.js https://example.com --html',
       '  node tools/audit.js https://example.com --json',
     ].join('\n'));
     process.exit(1);
@@ -115,6 +119,13 @@ async function main() {
 
     if (format === 'json') {
       console.log(JSON.stringify(result, null, 2));
+    } else if (format === 'html') {
+      const html = renderHtmlReport(result.scoreData, { ...result, url: result.url });
+      const domain = getHostname(result.url).replace(/[^a-z0-9.-]/gi, '-');
+      const date = new Date().toISOString().slice(0, 10);
+      const outFile = path.join(process.cwd(), `geo-audit-${domain}-${date}.html`);
+      fs.writeFileSync(outFile, html, 'utf8');
+      console.log(`HTML report written to: ${outFile}`);
     } else {
       const report = renderReport(result.scoreData, { ...result, url: result.url });
       console.log(report);
