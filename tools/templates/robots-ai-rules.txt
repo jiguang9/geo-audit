@@ -1,0 +1,49 @@
+# AI Crawler rules for robots.txt
+# Copy the relevant block(s) into your existing robots.txt
+# Status: confirmed unless noted otherwise
+
+# --- ChatGPT (OpenAI) ---
+User-agent: GPTBot
+Allow: /
+
+# --- ChatGPT Search (OpenAI) ---
+User-agent: OAI-SearchBot
+Allow: /
+
+# --- Claude (Anthropic) ---
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# --- Perplexity ---
+User-agent: PerplexityBot
+Allow: /
+
+# --- Google AI Overviews ---
+# Googlebot already covers this; no separate entry needed.
+User-agent: Googlebot
+Allow: /
+
+# --- Copilot / Bing AI (Microsoft) ---
+User-agent: Bingbot
+Allow: /
+
+# --- Doubao / ByteDance (豆包) ---
+User-agent: Bytespider
+Allow: /
+
+# --- ERNIE Bot / Baidu (文心一言) ---
+User-agent: Baiduspider
+Allow: /
+
+# --- Meta AI (likely — unconfirmed stable UA) ---
+User-agent: meta-externalagent
+Allow: /
+
+# --- If you want to block a specific bot ---
+# Example: block only GPTBot from training data
+#
+# User-agent: GPTBot
+# Disallow: /

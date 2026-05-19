@@ -1,0 +1,28 @@
+{
+  "name": "@weiguang8412/geo-audit",
+  "version": "1.0.0",
+  "description": "GEO (Generative Engine Optimization) diagnostic skill — audit AI search visibility across ChatGPT, Perplexity, Claude, DeepSeek, Doubao and more",
+  "bin": {
+    "geo-audit": "./tools/audit.js"
+  },
+  "scripts": {
+    "test": "node --test tests/",
+    "audit": "node tools/audit.js"
+  },
+  "keywords": [
+    "geo",
+    "ai-seo",
+    "generative-engine-optimization",
+    "llm-seo",
+    "ai-visibility",
+    "skills",
+    "agent",
+    "claude-code",
+    "codex"
+  ],
+  "author": "weiguang8412",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

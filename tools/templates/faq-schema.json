@@ -1,0 +1,30 @@
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What is {Your Product/Service}?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{A clear, concise answer that stands alone without context. AI systems extract this directly.}"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does {Your Product/Service} work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{Step-by-step or plain-language explanation. Include key terms AI might search for.}"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How much does {Your Product/Service} cost?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "{Pricing details. Be specific — AI citation favors factual, quotable answers.}"
+      }
+    }
+  ]
+}

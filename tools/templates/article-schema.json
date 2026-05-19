@@ -1,0 +1,27 @@
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{Article Title — under 110 characters}",
+  "description": "{One-sentence summary of the article}",
+  "image": "{https://example.com/images/article-image.jpg}",
+  "datePublished": "{YYYY-MM-DD}",
+  "dateModified": "{YYYY-MM-DD}",
+  "author": {
+    "@type": "Person",
+    "name": "{Author Full Name}",
+    "url": "{https://example.com/authors/name}",
+    "jobTitle": "{Job Title or Credentials}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "{Publisher / Brand Name}",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "{https://example.com/logo.png}"
+    }
+  },
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{https://example.com/article-url}"
+  }
+}
