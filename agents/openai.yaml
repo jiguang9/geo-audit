@@ -1,0 +1,45 @@
+interface:
+  display_name: "GEO Audit"
+  short_description: "Audit AI search visibility and citation readiness across ChatGPT, Perplexity, Claude, DeepSeek, Doubao and more"
+  default_prompt: "Use $geo-audit to audit https://example.com for AI search visibility."
+  icon: "🔍"
+
+invocation:
+  trigger: "$geo-audit"
+  aliases:
+    - "geo audit"
+    - "GEO诊断"
+    - "AI visibility check"
+
+policy:
+  allow_implicit_invocation: true
+
+tools:
+  - name: robots-checker
+    description: "Check whether AI crawlers are allowed in robots.txt"
+    command: "node tools/robots-checker.js <url>"
+  - name: llms-txt-checker
+    description: "Check whether /llms.txt exists and is valid"
+    command: "node tools/llms-txt-checker.js <url>"
+  - name: schema-inspector
+    description: "Inspect JSON-LD Schema markup and page structure"
+    command: "node tools/schema-inspector.js <url>"
+  - name: audit
+    description: "Run a full GEO diagnostic and output a report"
+    command: "node tools/audit.js <url> [--html] [--json]"
+
+context:
+  file: ".agents/geo-audit-context.md"
+  description: >
+    If this file exists in the project root, the skill reads it automatically.
+    Fields: url, brand, industry, platforms, market, queries, competitors.
+    The skill will prompt for missing fields if the file is absent.
+
+security:
+  allowed_url_types:
+    - public_http
+    - public_https
+  blocked:
+    - localhost
+    - private_ip_ranges
+    - internal_domains

@@ -92,3 +92,47 @@ Disallow: /
 `;
   assert.equal(parseCrawlerStatus(txt, 'GPTBot'), 'blocked');
 });
+
+// Multi-UA group: consecutive User-agent lines share the same rules
+const MULTI_UA_BLOCK = `
+User-agent: GPTBot
+User-agent: ClaudeBot
+User-agent: PerplexityBot
+Disallow: /
+`;
+
+const MULTI_UA_ALLOW = `
+User-agent: GPTBot
+User-agent: ClaudeBot
+Allow: /
+`;
+
+const MULTI_UA_MIXED = `
+User-agent: GPTBot
+User-agent: ClaudeBot
+Disallow: /
+
+User-agent: Googlebot
+Allow: /
+`;
+
+test('parseCrawlerStatus — multi-UA group: all bots in group are blocked', () => {
+  assert.equal(parseCrawlerStatus(MULTI_UA_BLOCK, 'GPTBot'),       'blocked');
+  assert.equal(parseCrawlerStatus(MULTI_UA_BLOCK, 'ClaudeBot'),    'blocked');
+  assert.equal(parseCrawlerStatus(MULTI_UA_BLOCK, 'PerplexityBot'),'blocked');
+});
+
+test('parseCrawlerStatus — multi-UA group: bot not in group is not-mentioned', () => {
+  assert.equal(parseCrawlerStatus(MULTI_UA_BLOCK, 'Bingbot'), 'not-mentioned');
+});
+
+test('parseCrawlerStatus — multi-UA group: all bots in group are allowed', () => {
+  assert.equal(parseCrawlerStatus(MULTI_UA_ALLOW, 'GPTBot'),    'allowed');
+  assert.equal(parseCrawlerStatus(MULTI_UA_ALLOW, 'ClaudeBot'), 'allowed');
+});
+
+test('parseCrawlerStatus — multi-UA group: second block does not bleed into first', () => {
+  assert.equal(parseCrawlerStatus(MULTI_UA_MIXED, 'GPTBot'),    'blocked');
+  assert.equal(parseCrawlerStatus(MULTI_UA_MIXED, 'ClaudeBot'), 'blocked');
+  assert.equal(parseCrawlerStatus(MULTI_UA_MIXED, 'Googlebot'), 'allowed');
+});
