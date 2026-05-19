@@ -29,7 +29,18 @@ function parseArgs(argv) {
   const json = args.includes('--json');
   const html = args.includes('--html');
   const format = json ? 'json' : html ? 'html' : 'markdown';
-  return { url, format };
+
+  // Named flags: --brand "深信服" --industry SaaS --market China
+  const namedFlags = {};
+  for (let i = 0; i < args.length; i++) {
+    const m = /^--(brand|industry|market|platforms|queries|competitors)$/.exec(args[i]);
+    if (m && args[i + 1] && !args[i + 1].startsWith('--')) {
+      namedFlags[m[1]] = args[i + 1];
+      i++;
+    }
+  }
+
+  return { url, format, namedFlags };
 }
 
 function loadContext(startDir) {
@@ -84,38 +95,43 @@ async function runAudit(siteUrl, context) {
 }
 
 async function main() {
-  const { url, format } = parseArgs(process.argv);
+  const { url, format, namedFlags } = parseArgs(process.argv);
 
   if (!url) {
     console.error([
       'geo-audit — GEO (Generative Engine Optimization) diagnostic tool',
       '',
       'Usage:',
-      '  node tools/audit.js <url>          # Markdown report (stdout)',
-      '  node tools/audit.js <url> --json   # JSON output (stdout)',
-      '  node tools/audit.js <url> --html   # HTML report (written to file)',
+      '  node tools/audit.js <url>                        # Markdown report',
+      '  node tools/audit.js <url> --html                 # HTML report (file)',
+      '  node tools/audit.js <url> --html --brand "深信服" # HTML with brand name',
+      '  node tools/audit.js <url> --json                 # JSON output',
+      '',
+      'Named flags (all optional):',
+      '  --brand <name>       Brand name shown in the report',
+      '  --industry <type>    SaaS / ecommerce / media / B2B / local',
+      '  --market <market>    China / US / global',
       '',
       'Examples:',
-      '  node tools/audit.js https://example.com',
-      '  node tools/audit.js https://example.com --html',
-      '  node tools/audit.js https://example.com --json',
+      '  node tools/audit.js https://example.com --html --brand "Acme"',
     ].join('\n'));
     process.exit(1);
   }
 
-  // Try to load context from the current working directory (user's project)
-  const context = loadContext(process.cwd());
+  // Load context file, then overlay any CLI-provided named flags
+  const fileContext = loadContext(process.cwd());
+  const context = { ...(fileContext || {}), ...namedFlags };
 
-  if (!context) {
+  if (!fileContext && Object.keys(namedFlags).length === 0) {
     process.stderr.write(
-      'Note: No .agents/geo-audit-context.md found in current directory.\n' +
+      'Note: No .agents/geo-audit-context.md found and no --brand flag provided.\n' +
       'Third-party presence dimension will be marked as unknown.\n' +
       'See README.md for context file format.\n\n'
     );
   }
 
   try {
-    const result = await runAudit(url, context || {});
+    const result = await runAudit(url, context);
 
     if (format === 'json') {
       console.log(JSON.stringify(result, null, 2));

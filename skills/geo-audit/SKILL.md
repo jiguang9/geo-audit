@@ -57,11 +57,18 @@ node tools/content-structure.js <url>
 Or run all at once with the main entry (always use `--html` to generate the visual report):
 
 ```bash
-node tools/audit.js <url> --html    # HTML report written to file + summary printed
-node tools/audit.js <url> --json    # JSON for further processing
+# Basic — brand name shown in report header
+node tools/audit.js <url> --html --brand "品牌名"
+
+# With more context
+node tools/audit.js <url> --html --brand "深信服" --industry SaaS --market China
+
+# JSON for further processing
+node tools/audit.js <url> --json
 ```
 
-After running with `--html`, share the file path with the user so they can open it in a browser.
+**Always pass `--brand` when you know the brand name** — it appears in the report header.
+After running, share the HTML file path with the user so they can open it in a browser.
 
 ## Phase 2 — Three-Pillar Evaluation
 
