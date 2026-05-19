@@ -13,6 +13,20 @@ Claude Code, Codex, OpenClaw, Hermes, Cursor, Windsurf, GitHub Copilot
 npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 ```
 
+## Update
+
+`npx skills add` installs as a plain folder (no `.git`), so `git pull` will not work.
+Use one of these methods to update to the latest version:
+
+```bash
+# Option 1 — re-run install (overwrites with latest)
+npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
+
+# Option 2 — run the bundled update script
+bash ~/.codex/skills/geo-audit/update.sh
+# (adjust path to wherever the skill is installed)
+```
+
 ## Skills
 
 | Skill | Trigger | Description |

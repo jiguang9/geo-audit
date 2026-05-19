@@ -16,6 +16,19 @@ npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 
 Works with: Claude Code, Codex, OpenClaw, Hermes, Cursor, Windsurf
 
+## Update
+
+`npx skills add` copies files as a plain folder — `git pull` will fail with
+"not a git repository". Update by re-running the install command instead:
+
+```bash
+# Re-install to get the latest version
+npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
+
+# Or use the bundled script (adjust path as needed)
+bash ~/.codex/skills/geo-audit/update.sh
+```
+
 ## Usage
 
 ### As a skill (in your agent)
