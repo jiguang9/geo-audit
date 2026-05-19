@@ -18,16 +18,16 @@ Works with: Claude Code, Codex, OpenClaw, Hermes, Cursor, Windsurf
 
 ## Update
 
-`npx skills add` copies files as a plain folder — `git pull` will fail with
-"not a git repository". Update by re-running the install command instead:
+`npx skills add` copies files as a plain folder (no `.git`), so `git pull`
+and `npx` both fail inside sandboxed shells like Codex. Use `update.sh` instead
+— it only needs `curl` or `wget`:
 
 ```bash
-# Re-install to get the latest version
-npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
-
-# Or use the bundled script (adjust path as needed)
 bash ~/.codex/skills/geo-audit/update.sh
+# Adjust the path to wherever the skill is installed
 ```
+
+`update.sh` auto-selects the best available method: `git pull` → `curl` → `wget`.
 
 ## Usage
 

@@ -15,17 +15,16 @@ npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 
 ## Update
 
-`npx skills add` installs as a plain folder (no `.git`), so `git pull` will not work.
-Use one of these methods to update to the latest version:
+`npx skills add` installs as a plain folder (no `.git`). In sandboxed shells
+like Codex, both `git pull` and `npx` may be unavailable. Use the bundled
+script — it only requires `curl` or `wget`:
 
 ```bash
-# Option 1 — re-run install (overwrites with latest)
-npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
-
-# Option 2 — run the bundled update script
 bash ~/.codex/skills/geo-audit/update.sh
-# (adjust path to wherever the skill is installed)
+# Adjust path to wherever the skill is installed
 ```
+
+The script tries: git pull → curl → wget, in that order.
 
 ## Skills
 

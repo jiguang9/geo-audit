@@ -1,24 +1,54 @@
 #!/usr/bin/env bash
-# Update geo-audit skill to the latest version from GitHub.
-# Run this script from inside the skill directory, or pass the install path as $1.
+# Update geo-audit to the latest version from GitHub.
+# Works without npx or a git clone — only requires curl (or wget).
 #
 # Usage:
-#   bash update.sh                          # auto-detects skill directory
-#   bash update.sh ~/.codex/skills/geo-audit
+#   bash update.sh                               # run from inside skill dir
+#   bash update.sh /path/to/skill/geo-audit      # explicit path
 
 set -e
 
 SKILL_DIR="${1:-$(dirname "$0")}"
-REPO="https://github.com/jiguang9/geo-audit"
+OWNER="jiguang9"
+REPO="geo-audit"
+TARBALL="https://github.com/${OWNER}/${REPO}/archive/refs/heads/main.tar.gz"
 
-echo "Updating geo-audit from ${REPO}..."
+echo "geo-audit update starting..."
+echo "  Skill directory: ${SKILL_DIR}"
 
+# ── Option 1: git repo ────────────────────────────────────────────────────────
 if [ -d "${SKILL_DIR}/.git" ]; then
-  # Installed as a git clone — just pull
+  echo "  Method: git pull"
   git -C "${SKILL_DIR}" pull --ff-only
-else
-  # Installed as a plain folder (npx skills add) — re-download via npx
-  npx --yes skills add "${REPO}" --skill geo-audit
+  echo "geo-audit updated via git."
+  exit 0
 fi
 
-echo "geo-audit updated successfully."
+# ── Option 2: curl ────────────────────────────────────────────────────────────
+if command -v curl &>/dev/null; then
+  echo "  Method: curl (GitHub tarball)"
+  TMP=$(mktemp -d)
+  curl -fsSL "${TARBALL}" | tar -xz -C "${TMP}" --strip-components=1
+  cp -r "${TMP}/." "${SKILL_DIR}/"
+  rm -rf "${TMP}"
+  echo "geo-audit updated via curl."
+  exit 0
+fi
+
+# ── Option 3: wget ────────────────────────────────────────────────────────────
+if command -v wget &>/dev/null; then
+  echo "  Method: wget (GitHub tarball)"
+  TMP=$(mktemp -d)
+  wget -qO- "${TARBALL}" | tar -xz -C "${TMP}" --strip-components=1
+  cp -r "${TMP}/." "${SKILL_DIR}/"
+  rm -rf "${TMP}"
+  echo "geo-audit updated via wget."
+  exit 0
+fi
+
+# ── Fallback ─────────────────────────────────────────────────────────────────
+echo "Error: curl, wget, and git are all unavailable."
+echo "Update manually by downloading:"
+echo "  ${TARBALL}"
+echo "and extracting into: ${SKILL_DIR}"
+exit 1
