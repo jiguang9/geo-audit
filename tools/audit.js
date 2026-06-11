@@ -211,4 +211,4 @@ async function main() {
 
 main();
 
-module.exports = { runAudit, loadContext };
+module.exports = { runAudit, loadContext, parseArgs };
