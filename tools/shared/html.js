@@ -27,15 +27,31 @@ function extractMeta(html) {
 }
 
 function extractHeadings(html) {
+  // Strip nav, footer, aside to avoid counting platform chrome (menus, sidebars)
+  const body = html
+    .replace(/<nav[\s\S]*?<\/nav>/gi, '')
+    .replace(/<footer[\s\S]*?<\/footer>/gi, '')
+    .replace(/<aside[\s\S]*?<\/aside>/gi, '');
+
   const result = { h1: [], h2: [], h3: [] };
   for (const level of [1, 2, 3]) {
     const re = new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi');
     let m;
-    while ((m = re.exec(html)) !== null) {
+    while ((m = re.exec(body)) !== null) {
       result[`h${level}`].push(m[1].replace(/<[^>]+>/g, '').trim());
     }
   }
   return result;
+}
+
+function extractMicrodataTypes(html) {
+  const types = new Set();
+  const re = /itemtype=["']https?:\/\/schema\.org\/([^"'\s]+)["']/gi;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    types.add(m[1]);
+  }
+  return [...types];
 }
 
 function extractStructuralElements(html) {
@@ -92,6 +108,7 @@ module.exports = {
   extractJsonLd,
   extractMeta,
   extractHeadings,
+  extractMicrodataTypes,
   extractStructuralElements,
   extractAuthorDate,
   countExternalLinks,

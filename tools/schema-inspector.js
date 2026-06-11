@@ -7,6 +7,7 @@ const {
   extractJsonLd,
   extractMeta,
   extractHeadings,
+  extractMicrodataTypes,
   extractStructuralElements,
   extractAuthorDate,
   countExternalLinks,
@@ -55,7 +56,10 @@ async function inspectSchema(pageUrl) {
   const hostname = getHostname(url);
 
   const jsonLdItems = extractJsonLd(html);
-  const schemaTypes = collectSchemaTypes(jsonLdItems);
+  const jsonLdTypes = collectSchemaTypes(jsonLdItems);
+  const microdataTypes = extractMicrodataTypes(html);
+  // Merge both sources; track origin for reporting
+  const schemaTypes = [...new Set([...jsonLdTypes, ...microdataTypes])];
   const missing = RECOMMENDED_SCHEMAS.filter(t => !schemaTypes.includes(t));
 
   const meta = extractMeta(html);
@@ -78,6 +82,7 @@ async function inspectSchema(pageUrl) {
       found: schemaTypes,
       missing,
       jsonLdBlockCount: jsonLdItems.length,
+      microdataTypes,
     },
     structure: structural,
     authorDate,
@@ -102,8 +107,9 @@ if (require.main === module) {
     console.log('\nHeadings');
     console.log(`  H1: ${r.headings.h1Count}  H2: ${r.headings.h2Count}  H3: ${r.headings.h3Count}  Hierarchy OK: ${r.headings.hasProperHierarchy ? '✅' : '⚠️'}`);
 
-    console.log('\nSchema markup (JSON-LD)');
-    console.log(`  Found:   ${r.schema.found.length ? r.schema.found.join(', ') : '— none'}`);
+    const mdNote = r.schema.microdataTypes.length ? ` (microdata: ${r.schema.microdataTypes.join(', ')})` : '';
+    console.log('\nSchema markup (JSON-LD + microdata)');
+    console.log(`  Found:   ${r.schema.found.length ? r.schema.found.join(', ') + mdNote : '— none'}`);
     console.log(`  Missing: ${r.schema.missing.join(', ')}`);
 
     console.log('\nContent structure');

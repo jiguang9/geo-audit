@@ -7,6 +7,7 @@ const {
   extractJsonLd,
   extractMeta,
   extractHeadings,
+  extractMicrodataTypes,
   extractStructuralElements,
   extractAuthorDate,
   countExternalLinks,
@@ -119,4 +120,29 @@ test('extractMeta — returns nulls when tags absent', () => {
   assert.equal(meta.title, null);
   assert.equal(meta.description, null);
   assert.equal(meta.canonical, null);
+});
+
+test('extractMicrodataTypes — detects itemtype schema.org types', () => {
+  const html = `
+    <div itemscope itemtype="https://schema.org/SoftwareSourceCode">
+      <span itemscope itemtype="http://schema.org/Organization">Acme</span>
+    </div>`;
+  const types = extractMicrodataTypes(html);
+  assert.ok(types.includes('SoftwareSourceCode'), 'Should detect SoftwareSourceCode');
+  assert.ok(types.includes('Organization'), 'Should detect Organization');
+});
+
+test('extractMicrodataTypes — returns empty array when no microdata', () => {
+  const types = extractMicrodataTypes('<div>no schema here</div>');
+  assert.equal(types.length, 0);
+});
+
+test('extractHeadings — excludes headings inside nav and footer', () => {
+  const html = `
+    <nav><h1>Site Nav</h1><h2>Menu Item</h2></nav>
+    <main><h1>Real Title</h1><h2>Section</h2></main>
+    <footer><h2>Footer Heading</h2></footer>`;
+  const h = extractHeadings(html);
+  assert.equal(h.h1.length, 1, 'Only main h1 should count');
+  assert.equal(h.h2.length, 1, 'Only main h2 should count');
 });
