@@ -24,23 +24,29 @@ const path = require('path');
 
 function parseArgs(argv) {
   const args = argv.slice(2);
-  const url = args.find(a => !a.startsWith('--'));
   if (args.includes('--html')) {
     process.stderr.write('Error: --html has been removed. Output is now Markdown (stdout) or --json.\n');
     process.exit(1);
   }
-  const json = args.includes('--json');
-  const format = json ? 'json' : 'markdown';
 
-  // Named flags: --brand "深信服" --industry SaaS --market China
+  // Parse named flag-value pairs first, tracking which indices are consumed values
+  const NAMED_FLAG_RE = /^--(brand|industry|market|platforms|queries|competitors)$/;
   const namedFlags = {};
+  const valueIndices = new Set();
   for (let i = 0; i < args.length; i++) {
-    const m = /^--(brand|industry|market|platforms|queries|competitors)$/.exec(args[i]);
+    const m = NAMED_FLAG_RE.exec(args[i]);
     if (m && args[i + 1] && !args[i + 1].startsWith('--')) {
       namedFlags[m[1]] = args[i + 1];
+      valueIndices.add(i + 1);
       i++;
     }
   }
+
+  // URL: first non-flag, non-flag-value positional argument
+  const url = args.find((a, i) => !a.startsWith('--') && !valueIndices.has(i));
+
+  const json = args.includes('--json');
+  const format = json ? 'json' : 'markdown';
 
   return { url, format, namedFlags };
 }
