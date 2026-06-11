@@ -46,20 +46,48 @@ function parseArgs(argv) {
 
 function loadContext(startDir) {
   const candidates = [
-    path.join(startDir, '.agents', 'geo-audit-context.md'),
     path.join(startDir, '.agents', 'geo-audit-context.json'),
+    path.join(startDir, '.agents', 'geo-audit-context.md'),
   ];
   for (const p of candidates) {
-    if (fs.existsSync(p)) {
-      const raw = fs.readFileSync(p, 'utf8');
-      // Parse simple key: value markdown format
-      const ctx = {};
-      for (const line of raw.split('\n')) {
-        const m = /^[-*]?\s*\*?\*?(\w+)\*?\*?\s*[:：]\s*(.+)/.exec(line.trim());
-        if (m) ctx[m[1].toLowerCase()] = m[2].trim();
-      }
-      return ctx;
+    if (!fs.existsSync(p)) continue;
+    const raw = fs.readFileSync(p, 'utf8');
+    if (p.endsWith('.json')) {
+      try { return JSON.parse(raw); } catch (_) { return null; }
     }
+    // Markdown: parse key: value lines; collect multiline JSON values
+    const ctx = {};
+    let jsonKey = null;
+    let jsonBuf = '';
+    for (const line of raw.split('\n')) {
+      // If accumulating JSON, continue until bracket closes
+      if (jsonKey) {
+        jsonBuf += line;
+        const opens = (jsonBuf.match(/[{\[]/g) || []).length;
+        const closes = (jsonBuf.match(/[}\]]/g) || []).length;
+        if (closes >= opens) {
+          try { ctx[jsonKey] = JSON.parse(jsonBuf); } catch (_) {}
+          jsonKey = null; jsonBuf = '';
+        }
+        continue;
+      }
+      const m = /^[-*]?\s*\*?\*?(\w+)\*?\*?\s*[:：]\s*(.*)/.exec(line.trim());
+      if (!m) continue;
+      const key = m[1].toLowerCase();
+      const val = m[2].trim();
+      if (val.startsWith('[') || val.startsWith('{')) {
+        const opens = (val.match(/[{\[]/g) || []).length;
+        const closes = (val.match(/[}\]]/g) || []).length;
+        if (closes >= opens) {
+          try { ctx[key] = JSON.parse(val); } catch (_) { ctx[key] = val; }
+        } else {
+          jsonKey = key; jsonBuf = val;
+        }
+      } else if (val) {
+        ctx[key] = val;
+      }
+    }
+    return ctx;
   }
   return null;
 }
@@ -83,10 +111,11 @@ async function runAudit(siteUrl, context) {
   // These signals are article-level, not homepage-level
   let articleSchemaResult = null;
   let articleUrl = null;
+  let sitemapResult = { found: false };
   try {
-    const sitemap = await checkSitemap(url);
-    if (sitemap.found && sitemap.sampleUrls) {
-      const candidate = sitemap.sampleUrls.find(u =>
+    sitemapResult = await checkSitemap(url);
+    if (sitemapResult.found && sitemapResult.sampleUrls) {
+      const candidate = sitemapResult.sampleUrls.find(u =>
         /\/blog\/|\/post\/|\/article\/|\/news\//.test(u)
       );
       if (candidate && isPublicUrl(candidate)) {
@@ -96,19 +125,31 @@ async function runAudit(siteUrl, context) {
     }
   } catch (_) { /* sitemap or article fetch failed — proceed without */ }
 
-  // Third-party presence requires user-provided evidence — not automated
+  // Third-party presence: user-provided evidence (structured object or JSON string)
   let presenceEvidence = {};
-  if (context?.presence) {
-    try {
-      presenceEvidence = JSON.parse(context.presence);
-    } catch (_) {
-      presenceEvidence = {};
+  const rawPresence = context?.presence || context?.presenceevidence;
+  if (rawPresence) {
+    if (typeof rawPresence === 'object') {
+      presenceEvidence = rawPresence;
+    } else {
+      try { presenceEvidence = JSON.parse(rawPresence); } catch (_) {}
+    }
+  }
+
+  // Citation evidence: query×platform matrix from context
+  let citationEvidence = null;
+  const rawCitation = context?.citationevidence || context?.citationEvidence;
+  if (rawCitation) {
+    if (Array.isArray(rawCitation)) {
+      citationEvidence = rawCitation;
+    } else {
+      try { citationEvidence = JSON.parse(rawCitation); } catch (_) {}
     }
   }
 
   const scoreData = computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult });
 
-  return { url, scoreData, robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult, articleUrl, context };
+  return { url, scoreData, robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSchemaResult, articleUrl, context };
 }
 
 async function main() {

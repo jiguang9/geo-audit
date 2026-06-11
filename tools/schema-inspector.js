@@ -24,6 +24,49 @@ const RECOMMENDED_BY_TYPE = {
   general:    ['WebPage'],
 };
 
+// Attribute-level checks: which properties are expected per schema type
+const REQUIRED_ATTRS = {
+  Organization:        ['name', 'url', 'description', 'sameAs', 'logo'],
+  WebSite:             ['name', 'url'],
+  Article:             ['headline', 'author', 'datePublished', 'publisher'],
+  BlogPosting:         ['headline', 'author', 'datePublished', 'dateModified', 'publisher'],
+  NewsArticle:         ['headline', 'author', 'datePublished', 'publisher'],
+  Product:             ['name', 'description', 'offers'],
+  WebApplication:      ['name', 'description', 'offers', 'applicationCategory'],
+  SoftwareApplication: ['name', 'description', 'offers', 'applicationCategory'],
+  FAQPage:             ['mainEntity'],
+  Person:              ['name', 'jobTitle', 'sameAs'],
+};
+
+function checkSchemaAttributes(jsonLdItems) {
+  const missingProperties = [];
+  const seen = new Set();
+
+  function checkItem(item) {
+    const types = [].concat(item['@type'] || []);
+    for (const type of types) {
+      const required = REQUIRED_ATTRS[type];
+      if (!required) continue;
+      for (const prop of required) {
+        const key = `${type}.${prop}`;
+        if (!item[prop] && !seen.has(key)) {
+          seen.add(key);
+          missingProperties.push({ type, property: prop });
+        }
+      }
+    }
+  }
+
+  for (const item of jsonLdItems) {
+    checkItem(item);
+    if (item['@graph']) {
+      for (const node of item['@graph']) checkItem(node);
+    }
+  }
+
+  return missingProperties;
+}
+
 function detectPageType(urlStr, schemaFound) {
   let pathname = '/';
   try { pathname = new URL(urlStr).pathname.toLowerCase(); } catch (_) {}
@@ -95,6 +138,7 @@ async function inspectSchema(pageUrl) {
   const pageType = detectPageType(url, schemaTypes);
   const recommendedForType = RECOMMENDED_BY_TYPE[pageType] || RECOMMENDED_BY_TYPE.general;
   const missing = recommendedForType.filter(t => !schemaTypes.includes(t));
+  const missingProperties = checkSchemaAttributes(jsonLdItems);
 
   const meta = extractMeta(html);
   const headings = extractHeadings(html);
@@ -116,6 +160,7 @@ async function inspectSchema(pageUrl) {
     schema: {
       found: schemaTypes,
       missing,
+      missingProperties,
       jsonLdBlockCount: jsonLdItems.length,
       microdataTypes,
     },
@@ -147,6 +192,10 @@ if (require.main === module) {
     console.log('\nSchema markup (JSON-LD + microdata)');
     console.log(`  Found:   ${r.schema.found.length ? r.schema.found.join(', ') + mdNote : '— none'}`);
     console.log(`  Missing: ${r.schema.missing.join(', ')}`);
+    if (r.schema.missingProperties && r.schema.missingProperties.length > 0) {
+      console.log(`  Missing properties:`);
+      r.schema.missingProperties.forEach(mp => console.log(`    ❌ ${mp.type}.${mp.property}`));
+    }
 
     console.log('\nContent structure');
     console.log(`  Tables: ${r.structure.tables}  OL: ${r.structure.orderedLists}  UL: ${r.structure.unorderedLists}  Details: ${r.structure.detailsBlocks}  Paragraphs: ${r.structure.paragraphs}`);

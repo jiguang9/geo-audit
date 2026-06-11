@@ -174,3 +174,22 @@ test('parseCrawlerStatus — longer Disallow overrides shorter Allow for root', 
 test('parseCrawlerStatus — homepage still accessible when only blog is disallowed', () => {
   assert.equal(parseCrawlerStatus(LONGER_DISALLOW, 'GPTBot', '/'), 'allowed');
 });
+
+// Deep-path targetPath tests: verifies that targetPath is actually used
+const DEEP_BLOCK = `
+User-agent: GPTBot
+Disallow: /private/
+Allow: /
+`;
+
+test('parseCrawlerStatus — deep path blocked when Disallow covers it', () => {
+  assert.equal(parseCrawlerStatus(DEEP_BLOCK, 'GPTBot', '/private/secret'), 'blocked');
+});
+
+test('parseCrawlerStatus — root allowed even when deep path blocked', () => {
+  assert.equal(parseCrawlerStatus(DEEP_BLOCK, 'GPTBot', '/public/page'), 'allowed');
+});
+
+test('parseCrawlerStatus — homepage allowed when only /private/ blocked', () => {
+  assert.equal(parseCrawlerStatus(DEEP_BLOCK, 'GPTBot', '/'), 'allowed');
+});

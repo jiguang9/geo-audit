@@ -66,7 +66,7 @@ function renderSchema(schemaResult) {
   ].join('\n');
 }
 
-function diagnoseFailureCodes(scoreData, robotsResult) {
+function diagnoseFailureCodes(scoreData, robotsResult, sitemapResult) {
   const d = scoreData.dimensions;
   const codes = [];
 
@@ -83,14 +83,22 @@ function diagnoseFailureCodes(scoreData, robotsResult) {
     }
   }
 
-  // T-INDEX: no sitemap / no llms.txt
+  // T-INDEX: no llms.txt and/or no sitemap
   const noLlms = !scoreData._llmsExists;
-  if (noLlms) {
+  const noSitemap = sitemapResult && !sitemapResult.found;
+  if (noLlms || noSitemap) {
+    const detail = [
+      noLlms ? '/llms.txt 缺失，AI 系统无法获取站点摘要和关键路径' : '',
+      noSitemap ? 'sitemap.xml 未找到，AI 爬虫无法发现站点页面列表' : '',
+    ].filter(Boolean).join('；');
     codes.push({
       code: 'T-INDEX',
       label: '可发现性不足',
-      detail: '/llms.txt 缺失，AI 系统无法获取站点摘要和关键路径。',
-      fix: '上线 /llms.txt，按 P0 行动项中的模板填写。',
+      detail,
+      fix: [
+        noLlms ? '上线 /llms.txt（见 P0 模板）' : '',
+        noSitemap ? '生成并提交 sitemap.xml，在 robots.txt 中用 Sitemap: 指令声明' : '',
+      ].filter(Boolean).join('；'),
     });
   }
 
@@ -307,6 +315,62 @@ function buildActions(scoreData, schemaResult, url) {
   return { p0, p1, p2 };
 }
 
+function renderCitationMatrix(citationEvidence) {
+  if (!Array.isArray(citationEvidence) || citationEvidence.length === 0) return null;
+  const platforms = [...new Set(citationEvidence.map(e => e.platform))];
+  const queries = [...new Set(citationEvidence.map(e => e.query))];
+
+  const header = `| 查询 / 平台 | ${platforms.join(' | ')} |`;
+  const divider = `|${['---', ...platforms.map(() => ':---:')].join('|')}|`;
+
+  const rows = queries.map(q => {
+    const cells = platforms.map(p => {
+      const entry = citationEvidence.find(e => e.query === q && e.platform === p);
+      if (!entry) return '—';
+      if (entry.brandMentioned && entry.officialUrlCited) return '✅ 引用+链接';
+      if (entry.brandMentioned) return '⚠️ 提及';
+      return '❌ 未出现';
+    });
+    return `| ${q} | ${cells.join(' | ')} |`;
+  });
+
+  const competitorLines = citationEvidence
+    .filter(e => e.competitorsCited && e.competitorsCited.length > 0)
+    .map(e => `- ${e.platform} / "${e.query}"：${e.competitorsCited.join('、')} 被引用`);
+
+  const lines = ['### 引用证据矩阵', '', header, divider, ...rows, ''];
+  if (competitorLines.length > 0) {
+    lines.push('**竞品被引用情况**', '', ...competitorLines, '');
+  }
+  return lines.join('\n');
+}
+
+function renderPresencePlan(brand, presenceUnknown) {
+  if (!presenceUnknown || !brand) return null;
+  const encoded = encodeURIComponent(brand);
+  const links = [
+    { platform: 'GitHub',       url: `https://github.com/search?q=${encoded}`,                   note: '仓库/话题引用' },
+    { platform: 'G2',           url: `https://www.g2.com/search#query=${encoded}`,               note: '软件评测收录' },
+    { platform: '知乎',          url: `https://www.zhihu.com/search?type=content&q=${encoded}`,   note: '问答社区存在感' },
+    { platform: 'Product Hunt', url: `https://www.producthunt.com/search?q=${encoded}`,          note: '产品发现平台' },
+    { platform: '百度百科',      url: `https://baike.baidu.com/search/word?word=${encoded}`,      note: '中文百科词条' },
+    { platform: 'Capterra',     url: `https://www.capterra.com/search/?query=${encoded}`,        note: '企业软件目录' },
+  ];
+  const lines = [
+    '### 第三方存在感验证（待填写）',
+    '',
+    '请在以下链接搜索品牌，确认后将结果填入 `.agents/geo-audit-context.md` 的 `presence` 字段：',
+    '',
+    ...links.map(l => `- **${l.platform}**（${l.note}）: ${l.url}`),
+    '',
+    '```yaml',
+    '# .agents/geo-audit-context.md',
+    `presence: {"hasWikipedia": false, "hasBaiduBaike": false, "hasZhihu": false, "reviewPlatformCount": 0, "mediaMentionCount": 0, "socialPlatformCount": 0}`,
+    '```',
+  ];
+  return lines.join('\n');
+}
+
 function buildMonitoringQueries(context) {
   const industry = context?.industry || '';
   const brand = context?.brand || '[品牌]';
@@ -349,7 +413,7 @@ function buildMonitoringQueries(context) {
   return [...base, ...extra];
 }
 
-function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult, articleUrl, context, url: auditUrl }) {
+function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSchemaResult, articleUrl, context, url: auditUrl }) {
   const brand = context?.brand || auditUrl?.replace(/https?:\/\//, '').replace(/\/$/, '') || 'Unknown';
   const url = context?.url || auditUrl || '';
   const date = new Date().toISOString().slice(0, 10);
@@ -365,7 +429,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
 
   const { p0, p1, p2 } = buildActions(scoreData, schemaResult, url);
   const queries = buildMonitoringQueries(context);
-  const failureCodes = diagnoseFailureCodes(scoreData, robotsResult);
+  const failureCodes = diagnoseFailureCodes(scoreData, robotsResult, sitemapResult);
 
   const presenceDisplay = d.presence.raw !== null
     ? `${d.presence.raw}/${d.presence.max}`
@@ -434,6 +498,14 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     articleEvidenceLine,
     '',
   ];
+
+  // Citation matrix (if user provided evidence)
+  const citationMatrix = renderCitationMatrix(citationEvidence);
+  if (citationMatrix) lines.push(citationMatrix);
+
+  // Presence plan (if presence is unknown, generate search links)
+  const presencePlan = renderPresencePlan(brand, scoreData.presenceUnknown);
+  if (presencePlan) lines.push(presencePlan, '');
 
   // Failure taxonomy
   if (failureCodes.length > 0) {

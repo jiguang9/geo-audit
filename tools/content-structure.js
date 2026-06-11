@@ -11,7 +11,18 @@ const DEFINITION_PATTERN = /\b(is|refers to|means|defined as|is a|is an)\b/i;
 const DEFINITION_PATTERN_ZH = /[一-龥](是指|即|指的是|是一种|是一个)/;
 const STAT_PATTERN = /\d+(\.\d+)?%|\d[\d,]*\s*(万|百万|亿|billion|million|thousand)/i;
 const SOURCE_PATTERN = /来源[：:]\s*|数据来自|Source:\s*|according to|cited from|引用自/i;
-const STEP_VERB_PATTERN = /^(step|第\s*[一二三四五六七八九十\d]+步?|[一二三四五六七八九十]、|\d+\.\s)/i;
+// Match step-prefixed list items (tested per-item, no ^ needed against full text)
+const STEP_ITEM_RE = /(^|\s)(step\s*\d|第\s*[一二三四五六七八九十\d]+\s*步?|[一二三四五六七八九十]、|\d+\.\s)/i;
+
+function extractOlItems(html) {
+  const items = [];
+  (html.match(/<ol\b[^>]*>[\s\S]*?<\/ol>/gi) || []).forEach(ol => {
+    (ol.match(/<li\b[^>]*>([\s\S]*?)<\/li>/gi) || []).forEach(li => {
+      items.push(li.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim());
+    });
+  });
+  return items;
+}
 
 function analyzeContentStructure(html, url) {
   const text = extractPlainText(html);
@@ -37,10 +48,41 @@ function analyzeContentStructure(html, url) {
   // Extractable block detection
   const firstScreen = text.slice(0, 300);
   const hasFirstScreenDefinition = DEFINITION_PATTERN.test(firstScreen) || DEFINITION_PATTERN_ZH.test(firstScreen);
-  const hasStepBlocks = structural.orderedLists > 0 && STEP_VERB_PATTERN.test(text);
+
+  // Step block: test per-item from <ol> in HTML, not full text (avoids ^ anchor false negatives)
+  const olItems = extractOlItems(html);
+  const hasStepBlocks = olItems.length >= 2 && olItems.some(item => STEP_ITEM_RE.test(item));
+
   const hasStatistics = statCount >= 2;
   const hasCitations = sourceCount >= 1;
   const hasDefinitionBlocks = definitionCount >= 2;
+
+  // Quotable blocks: specific sentences AI is likely to cite
+  const MAX_QUOTE = 200;
+  const quotableBlocks = [];
+  sentences.filter(s =>
+    (DEFINITION_PATTERN.test(s) || DEFINITION_PATTERN_ZH.test(s)) &&
+    s.trim().length >= 30 && s.trim().length <= MAX_QUOTE
+  ).slice(0, 2).forEach(s => quotableBlocks.push({ type: 'definition', text: s.trim(), reason: '直接定义术语，AI 易截取' }));
+
+  sentences.filter(s =>
+    STAT_PATTERN.test(s) && s.trim().length >= 20 && s.trim().length <= MAX_QUOTE
+  ).slice(0, 2).forEach(s => quotableBlocks.push({ type: 'statistic', text: s.trim(), reason: '含量化数据，增加引用可信度' }));
+
+  for (let i = 0; i < sentences.length - 1 && quotableBlocks.filter(b => b.type === 'qa').length < 1; i++) {
+    const q = sentences[i];
+    const a = sentences[i + 1];
+    if ((QUESTION_WORDS.test(q) || QUESTION_WORDS_ZH.test(q)) &&
+        q.trim().length <= 100 && a && a.trim().length >= 20 && a.trim().length <= MAX_QUOTE) {
+      quotableBlocks.push({ type: 'qa', text: `${q.trim()} ${a.trim()}`, reason: '问答对，符合 AI 偏好的引用格式' });
+    }
+  }
+
+  const presentTypes = new Set(quotableBlocks.map(b => b.type));
+  if (hasStepBlocks) presentTypes.add('step');
+  if (hasCitations) presentTypes.add('citation');
+  if (structural.hasFaqSchema || structural.hasFaqClass) presentTypes.add('faq');
+  const missingBlocks = ['definition', 'statistic', 'step', 'citation', 'faq', 'qa'].filter(t => !presentTypes.has(t));
 
   const extractableBlockCount = [
     hasFirstScreenDefinition,
@@ -85,6 +127,8 @@ function analyzeContentStructure(html, url) {
       hasDefinitionBlocks,
       count: extractableBlockCount,
     },
+    quotableBlocks,
+    missingBlocks,
     interpretation: {
       likelyExtractable: extractableBlockCount >= 2 || structuralElements >= 2 || headingDepth >= 2 || structural.hasFaqSchema,
       selfContainedParagraphs: avgWordsPerParagraph >= 40 && avgWordsPerParagraph <= 200,
@@ -136,6 +180,16 @@ if (require.main === module) {
       console.log(`  Source citations:         ${eb.hasCitations ? '✅' : '—'}`);
       console.log(`  Definition blocks:        ${eb.hasDefinitionBlocks ? '✅' : '—'}`);
       console.log(`  Score: ${eb.count}/6 block types`);
+    }
+    if (r.quotableBlocks && r.quotableBlocks.length > 0) {
+      console.log('\nQuotable blocks (可供 AI 直接引用的片段)');
+      r.quotableBlocks.slice(0, 5).forEach((b, i) => {
+        console.log(`  ${i + 1}. [${b.type}] ${b.text.slice(0, 120)}${b.text.length > 120 ? '…' : ''}`);
+        console.log(`     原因: ${b.reason}`);
+      });
+    }
+    if (r.missingBlocks && r.missingBlocks.length > 0) {
+      console.log(`\n缺失的可引用内容类型: ${r.missingBlocks.join(', ')}`);
     }
     console.log('\nInterpretation (heuristic — not semantically verified)');
     console.log(`  Likely extractable by AI:    ${r.interpretation.likelyExtractable ? '✅' : '⚠️'}`);
