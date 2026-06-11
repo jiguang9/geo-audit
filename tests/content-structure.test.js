@@ -39,6 +39,18 @@ const HTML_NO_STEPS = `
 </body></html>
 `;
 
+const HTML_PLAIN_OL_GUIDE = `
+<html><body>
+<h1>How to Deploy in 3 Steps</h1>
+<p>Follow these steps to get started:</p>
+<ol>
+  <li>Install dependencies</li>
+  <li>Configure your environment</li>
+  <li>Run the application</li>
+</ol>
+</body></html>
+`;
+
 const HTML_WITH_DEFINITIONS = `
 <html><body>
 <h1>GEO Guide</h1>
@@ -77,6 +89,16 @@ test('analyzeContentStructure — step blocks detected from <ol> items (Chinese)
 test('analyzeContentStructure — unordered list is NOT flagged as step blocks', () => {
   const r = analyzeContentStructure(HTML_NO_STEPS, 'https://example.com/about');
   assert.equal(r.extractableBlocks.hasStepBlocks, false, 'UL should not count as step blocks');
+});
+
+test('analyzeContentStructure — plain <ol> with guide H1 detected as step block', () => {
+  const r = analyzeContentStructure(HTML_PLAIN_OL_GUIDE, 'https://example.com/deploy');
+  assert.equal(r.extractableBlocks.hasStepBlocks, true, 'OL + "How to" H1 should be step block');
+});
+
+test('analyzeContentStructure — plain <ol> with guide URL detected as step block', () => {
+  const r = analyzeContentStructure(HTML_PLAIN_OL_GUIDE, 'https://example.com/guide/deploy');
+  assert.equal(r.extractableBlocks.hasStepBlocks, true, 'OL + guide URL should be step block');
 });
 
 test('analyzeContentStructure — definition blocks detected', () => {

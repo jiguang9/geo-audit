@@ -49,9 +49,16 @@ function analyzeContentStructure(html, url) {
   const firstScreen = text.slice(0, 300);
   const hasFirstScreenDefinition = DEFINITION_PATTERN.test(firstScreen) || DEFINITION_PATTERN_ZH.test(firstScreen);
 
-  // Step block: test per-item from <ol> in HTML, not full text (avoids ^ anchor false negatives)
+  // Step block: test per-item from <ol> in HTML; also check page context for guide/tutorial signals
   const olItems = extractOlItems(html);
-  const hasStepBlocks = olItems.length >= 2 && olItems.some(item => STEP_ITEM_RE.test(item));
+  const STEP_CONTEXT_RE = /how.?to|guide|tutorial|steps?|步骤|教程|方法|指南|操作|安装|部署|配置/i;
+  const hasStepContextInUrl = typeof url === 'string' && STEP_CONTEXT_RE.test(url);
+  const hasStepContextInHeadings = headings.h1.concat(headings.h2).some(h => STEP_CONTEXT_RE.test(h));
+  const hasStepBlocks = olItems.length >= 2 && (
+    olItems.some(item => STEP_ITEM_RE.test(item)) ||
+    hasStepContextInUrl ||
+    hasStepContextInHeadings
+  );
 
   const hasStatistics = statCount >= 2;
   const hasCitations = sourceCount >= 1;

@@ -5,11 +5,10 @@
  * geo-audit — main CLI entry point
  *
  * Usage:
- *   node tools/audit.js <url> [--json] [--format markdown]
+ *   node tools/audit.js <url> [--json]
  *
  * Options:
- *   --json            Output structured JSON (default: Markdown)
- *   --format markdown Explicitly request Markdown output
+ *   --json   Output structured JSON (default: Markdown)
  */
 
 const { checkRobots } = require('./robots-checker.js');
@@ -19,8 +18,7 @@ const { checkContentStructure } = require('./content-structure.js');
 const { checkSitemap } = require('./sitemap-checker.js');
 const { computeGeoScore } = require('./score.js');
 const { renderReport } = require('./report.js');
-const { renderHtmlReport } = require('./report-html.js');
-const { normalizeUrl, isPublicUrl, getHostname } = require('./shared/url.js');
+const { normalizeUrl, isPublicUrl } = require('./shared/url.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -28,8 +26,7 @@ function parseArgs(argv) {
   const args = argv.slice(2);
   const url = args.find(a => !a.startsWith('--'));
   const json = args.includes('--json');
-  const html = args.includes('--html');
-  const format = json ? 'json' : html ? 'html' : 'markdown';
+  const format = json ? 'json' : 'markdown';
 
   // Named flags: --brand "深信服" --industry SaaS --market China
   const namedFlags = {};
@@ -160,10 +157,9 @@ async function main() {
       'geo-audit — GEO (Generative Engine Optimization) diagnostic tool',
       '',
       'Usage:',
-      '  node tools/audit.js <url>                        # Markdown report',
-      '  node tools/audit.js <url> --html                 # HTML report (file)',
-      '  node tools/audit.js <url> --html --brand "深信服" # HTML with brand name',
-      '  node tools/audit.js <url> --json                 # JSON output',
+      '  node tools/audit.js <url>                    # Markdown report (stdout)',
+      '  node tools/audit.js <url> --json             # JSON output',
+      '  node tools/audit.js <url> --brand "Brand"    # Include brand name',
       '',
       'Named flags (all optional):',
       '  --brand <name>       Brand name shown in the report',
@@ -171,7 +167,7 @@ async function main() {
       '  --market <market>    China / US / global',
       '',
       'Examples:',
-      '  node tools/audit.js https://example.com --html --brand "Acme"',
+      '  node tools/audit.js https://example.com --brand "Acme"',
     ].join('\n'));
     process.exit(1);
   }
@@ -193,27 +189,6 @@ async function main() {
 
     if (format === 'json') {
       console.log(JSON.stringify(result, null, 2));
-    } else if (format === 'html') {
-      const html = renderHtmlReport(result.scoreData, { ...result, url: result.url });
-      const domain = getHostname(result.url).replace(/[^a-z0-9.-]/gi, '-');
-      const date = new Date().toISOString().slice(0, 10);
-      const outFile = path.join(process.cwd(), `geo-audit-${domain}-${date}.html`);
-      fs.writeFileSync(outFile, html, 'utf8');
-
-      // Print compact summary to stdout so Agent can show key results inline
-      const d = result.scoreData.dimensions;
-      const presenceNote = result.scoreData.presenceUnknown ? ' (presence not assessed)' : '';
-      console.log([
-        `## GEO Audit — ${result.context?.brand || result.url}`,
-        `**GEO Score: ${result.scoreData.total}/${result.scoreData.totalMax}${presenceNote} · Level ${result.scoreData.level}**`,
-        '',
-        `| Dimension | Score |`,
-        `|-----------|-------|`,
-        `| Structure extractability | ${d.structure.raw}/${d.structure.max} |`,
-        `| Authority / credibility  | ${d.authority.raw}/${d.authority.max} |`,
-        `| Third-party presence     | ${d.presence.raw !== null ? d.presence.raw : '?'}/${d.presence.max} |`,
-        `| Technical accessibility  | ${d.technical.raw}/${d.technical.max} |`,
-      ].join('\n'));
     } else {
       const report = renderReport(result.scoreData, { ...result, url: result.url });
       console.log(report);

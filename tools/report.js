@@ -58,12 +58,32 @@ function renderSchema(schemaResult) {
   if (!schemaResult || schemaResult.error) return `Schema       错误: ${schemaResult?.error || 'no result'}`;
   const s = schemaResult.schema || {};
   const m = schemaResult.meta || {};
-  return [
+  const lines = [
     `Schema 标记`,
     `  已找到:   ${s.found && s.found.length ? s.found.join(', ') : '— 无'}`,
-    `  缺失:     ${s.missing && s.missing.length ? s.missing.slice(0, 5).join(', ') : '— 无'}`,
+    `  缺失类型: ${s.missing && s.missing.length ? s.missing.slice(0, 5).join(', ') : '— 无'}`,
     `  Title: ${m.title ? '✅' : '❌'}   Description: ${m.description ? '✅' : '❌'}   Canonical: ${m.canonical ? '✅' : '❌'}`,
-  ].join('\n');
+  ];
+  if (s.missingProperties && s.missingProperties.length > 0) {
+    lines.push(`  缺失属性:  ${s.missingProperties.slice(0, 8).map(p => `${p.type}.${p.property}`).join(', ')}`);
+  }
+  return lines.join('\n');
+}
+
+function renderContentEvidence(contentResult) {
+  if (!contentResult || contentResult.error) return null;
+  const lines = [];
+  if (contentResult.quotableBlocks && contentResult.quotableBlocks.length > 0) {
+    lines.push('可引用片段（AI 高概率截取）:');
+    contentResult.quotableBlocks.slice(0, 5).forEach((b, i) => {
+      const excerpt = b.text.length > 120 ? b.text.slice(0, 120) + '…' : b.text;
+      lines.push(`  ${i + 1}. [${b.type}] "${excerpt}"`);
+    });
+  }
+  if (contentResult.missingBlocks && contentResult.missingBlocks.length > 0) {
+    lines.push(`缺失内容块: ${contentResult.missingBlocks.join(', ')} — 建议补充`);
+  }
+  return lines.length > 0 ? lines.join('\n') : null;
 }
 
 function diagnoseFailureCodes(scoreData, robotsResult, sitemapResult) {
@@ -498,6 +518,9 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     articleEvidenceLine,
     '',
   ];
+
+  const contentEvidence = renderContentEvidence(contentResult);
+  if (contentEvidence) lines.push(contentEvidence, '');
 
   // Citation matrix (if user provided evidence)
   const citationMatrix = renderCitationMatrix(citationEvidence);

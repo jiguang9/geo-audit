@@ -48,15 +48,15 @@ node tools/sitemap-checker.js <url>
 
 This returns total page count, blog post count, last update date, and 2–3 sample URLs to spot-check.
 
-**Step 2 — Full homepage audit** (always include `--html` for the visual dashboard)
+**Step 2 — Full homepage audit**
 
 ```bash
-node tools/audit.js <url> --html --brand "品牌名"
+node tools/audit.js <url> --brand "品牌名"
 # or without brand if not known:
-node tools/audit.js <url> --html
+node tools/audit.js <url>
 ```
 
-Pass `--brand` only when already known. The command writes an HTML dashboard file — **do not mention the file path or filename in your response**.
+Pass `--brand` only when already known.
 
 **Step 3 — Spot-check 2–3 key pages** using sample URLs from Step 1
 
