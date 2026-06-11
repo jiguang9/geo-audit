@@ -161,18 +161,17 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   const presence = scorePresence(presenceEvidence);
   const technical = scoreTechnical(robotsResult, llmsResult, schemaResult);
 
-  // If presence is unknown, compute total over 75 and scale, or report separately
   const presenceKnown = presence.raw !== null;
   const knownTotal = structure.raw + authority.raw + technical.raw;
-  const knownMax = 75;
 
-  // Always report out of 100 for consistency.
-  // When presence is unknown the total is the raw sum of the 3 known dimensions (max 75).
-  // The caller can check presenceUnknown to display the correct context.
   const total = presenceKnown ? knownTotal + presence.raw : knownTotal;
-  const totalMax = 100;
+  // When presence is unknown, denominator is 75 (only assessed dimensions).
+  // Consumers must use totalMax (not a hardcoded 100) when displaying the score.
+  const totalMax = presenceKnown ? 100 : 75;
 
-  const level = total <= 15 ? 1 : total <= 30 ? 2 : total <= 50 ? 3 : total <= 65 ? 4 : 5;
+  // Compute level on a normalised 0-100 scale so thresholds stay consistent.
+  const normalised = Math.round((total / totalMax) * 100);
+  const level = normalised <= 20 ? 1 : normalised <= 40 ? 2 : normalised <= 60 ? 3 : normalised <= 80 ? 4 : 5;
 
   return {
     total,

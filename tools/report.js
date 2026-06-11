@@ -308,7 +308,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     `| 内容可摘取性 | ${d.structure.raw}/${d.structure.max} | ${statusIcon(d.structure.raw, d.structure.max)} |`,
     `| 实体与权威信号 | ${d.authority.raw}/${d.authority.max} | ${statusIcon(d.authority.raw, d.authority.max)} |`,
     `| 第三方存在感 | ${presenceDisplay} | ${statusIcon(d.presence.raw, d.presence.max)} |`,
-    `| **总分** | **${scoreData.total}/100** | **${levelLabel(scoreData.level)}** |`,
+    `| **总分** | **${scoreData.total}/${scoreData.totalMax}** | **${levelLabel(scoreData.level)}** |`,
     '',
     '### 关键技术证据',
     '',

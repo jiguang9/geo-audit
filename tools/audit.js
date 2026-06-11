@@ -147,7 +147,7 @@ async function main() {
       const presenceNote = result.scoreData.presenceUnknown ? ' (presence not assessed)' : '';
       console.log([
         `## GEO Audit — ${result.context?.brand || result.url}`,
-        `**GEO Score: ${result.scoreData.total}/100${presenceNote} · Level ${result.scoreData.level}**`,
+        `**GEO Score: ${result.scoreData.total}/${result.scoreData.totalMax}${presenceNote} · Level ${result.scoreData.level}**`,
         '',
         `| Dimension | Score |`,
         `|-----------|-------|`,

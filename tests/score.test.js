@@ -173,3 +173,26 @@ test('computeGeoScore — unknown presence is flagged', () => {
   assert.equal(result.presenceUnknown, true);
   assert.equal(result.dimensions.presence.raw, null);
 });
+
+test('computeGeoScore — totalMax is 75 when presence unknown', () => {
+  const result = computeGeoScore({
+    robotsResult: goodRobots,
+    llmsResult: goodLlms,
+    schemaResult: goodSchema,
+    contentResult: goodContent,
+    presenceEvidence: {},
+  });
+  assert.equal(result.totalMax, 75, 'Should use /75 denominator when presence unknown');
+});
+
+test('computeGeoScore — totalMax is 100 when presence known', () => {
+  const evidence = { hasWikipedia: true, reviewPlatformCount: 1 };
+  const result = computeGeoScore({
+    robotsResult: goodRobots,
+    llmsResult: goodLlms,
+    schemaResult: goodSchema,
+    contentResult: goodContent,
+    presenceEvidence: evidence,
+  });
+  assert.equal(result.totalMax, 100, 'Should use /100 denominator when presence known');
+});

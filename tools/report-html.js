@@ -47,10 +47,10 @@ function smallRing(score, max, label, subLabel) {
   </div>`;
 }
 
-function overallRing(score, max, level, presenceUnknown) {
-  const p = score / 100;
+function overallRing(score, totalMax, level, presenceUnknown) {
+  const p = score / totalMax;
   const color = ringColor(p >= 0.6 ? p : p >= 0.35 ? 0.5 : 0);
-  const offset = (RING_LG.c * (1 - score / 100)).toFixed(2);
+  const offset = (RING_LG.c * (1 - p)).toFixed(2);
   const note = presenceUnknown ? '（存在感待评估）' : '';
   return `
   <div class="overall-card">
@@ -62,7 +62,7 @@ function overallRing(score, max, level, presenceUnknown) {
       <text x="60" y="54" font-family="Orbitron,sans-serif" font-weight="900" font-size="26"
         fill="#1a2535" text-anchor="middle" dominant-baseline="middle">${score}</text>
       <text x="60" y="73" font-family="system-ui,sans-serif" font-size="10"
-        fill="#9ca3af" text-anchor="middle" dominant-baseline="middle">/100</text>
+        fill="#9ca3af" text-anchor="middle" dominant-baseline="middle">/${totalMax}</text>
     </svg>
     <div class="overall-label">综合 GEO 评分</div>
     <div class="overall-level">Level ${level}${note}</div>
@@ -189,8 +189,9 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
   const url   = context?.url || auditUrl || '';
   const date  = new Date().toISOString().slice(0, 10);
   const d     = scoreData.dimensions;
-  const score = scoreData.total;
-  const level = scoreData.level;
+  const score    = scoreData.total;
+  const totalMax = scoreData.totalMax;
+  const level    = scoreData.level;
 
   const findings = computeFindings(scoreData, schemaResult);
   const actions  = computeActions(findings, scoreData);
@@ -692,10 +693,10 @@ function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, c
     </div>
 
     <div class="overall-row">
-      ${overallRing(score, 100, level, scoreData.presenceUnknown)}
+      ${overallRing(score, totalMax, level, scoreData.presenceUnknown)}
     </div>
 
-    ${scoreData.presenceUnknown ? `<div class="info-box">第三方存在感（知乎、维基百科、评测平台等）需人工提供证明材料后才能评分，当前综合分满分上限为 75/100。</div>` : ''}
+    ${scoreData.presenceUnknown ? `<div class="info-box">第三方存在感（知乎、维基百科、评测平台等）需人工提供证明材料后才能评分，当前评分为 ${score}/75（仅含可自动检测的三项维度）。</div>` : ''}
   </div>
 
   <!-- ── 02 优先修复清单 ── -->
