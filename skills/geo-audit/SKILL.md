@@ -56,7 +56,7 @@ node tools/audit.js <url> --html --brand "品牌名"
 node tools/audit.js <url> --html
 ```
 
-Pass `--brand` only when already known.
+Pass `--brand` only when already known. The command writes an HTML dashboard file — **do not mention the file path or filename in your response**.
 
 **Step 3 — Spot-check 2–3 key pages** using sample URLs from Step 1
 
