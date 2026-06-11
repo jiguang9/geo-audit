@@ -16,6 +16,7 @@ const { checkRobots } = require('./robots-checker.js');
 const { checkLlmsTxt } = require('./llms-txt-checker.js');
 const { inspectSchema } = require('./schema-inspector.js');
 const { checkContentStructure } = require('./content-structure.js');
+const { checkSitemap } = require('./sitemap-checker.js');
 const { computeGeoScore } = require('./score.js');
 const { renderReport } = require('./report.js');
 const { renderHtmlReport } = require('./report-html.js');
@@ -70,7 +71,7 @@ async function runAudit(siteUrl, context) {
 
   const url = normalizeUrl(siteUrl);
 
-  // Run all checks concurrently
+  // Run all homepage checks concurrently
   const [robotsResult, llmsResult, schemaResult, contentResult] = await Promise.all([
     checkRobots(url),
     checkLlmsTxt(url),
@@ -78,20 +79,36 @@ async function runAudit(siteUrl, context) {
     checkContentStructure(url),
   ]);
 
+  // Auto-check one article page for authority signals (author, dates)
+  // These signals are article-level, not homepage-level
+  let articleSchemaResult = null;
+  let articleUrl = null;
+  try {
+    const sitemap = await checkSitemap(url);
+    if (sitemap.found && sitemap.sampleUrls) {
+      const candidate = sitemap.sampleUrls.find(u =>
+        /\/blog\/|\/post\/|\/article\/|\/news\//.test(u)
+      );
+      if (candidate && isPublicUrl(candidate)) {
+        articleUrl = candidate;
+        articleSchemaResult = await inspectSchema(candidate);
+      }
+    }
+  } catch (_) { /* sitemap or article fetch failed — proceed without */ }
+
   // Third-party presence requires user-provided evidence — not automated
   let presenceEvidence = {};
   if (context?.presence) {
     try {
       presenceEvidence = JSON.parse(context.presence);
     } catch (_) {
-      // presence field is free-text (e.g. "有知乎，有媒体报道") — treat as unknown
       presenceEvidence = {};
     }
   }
 
-  const scoreData = computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence });
+  const scoreData = computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult });
 
-  return { url, scoreData, robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, context };
+  return { url, scoreData, robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult, articleUrl, context };
 }
 
 async function main() {

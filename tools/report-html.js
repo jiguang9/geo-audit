@@ -149,12 +149,14 @@ function computeFindings(scoreData, schemaResult) {
 
   if (d.structure.breakdown.listScore >= 4) good.push('合理使用表格和列表，结构清晰');
 
-  if (d.authority.breakdown.authorScore === 6) good.push('页面包含作者署名');
-  else bad.push('未检测到作者署名，建议添加作者姓名与资质说明');
+  const articleChecked = scoreData.dimensions.authority.articleChecked;
+  const articleNote = articleChecked ? `（文章页）` : `（首页，建议检查文章页）`;
+  if (d.authority.breakdown.authorScore === 6) good.push(`包含作者署名${articleNote}`);
+  else bad.push(`未检测到作者署名${articleNote}，建议在文章页添加作者姓名与资质说明`);
 
-  if (d.authority.breakdown.freshnessScore >= 4) good.push('发布时间和更新时间均已标注');
-  else if (d.authority.breakdown.freshnessScore === 3) warn.push('建议同时标注发布时间和最后更新时间');
-  else bad.push('未检测到发布日期，AI 平台偏好标注时间的内容');
+  if (d.authority.breakdown.freshnessScore >= 4) good.push(`发布时间和更新时间均已标注${articleNote}`);
+  else if (d.authority.breakdown.freshnessScore === 3) warn.push(`建议同时标注发布时间和最后更新时间${articleNote}`);
+  else bad.push(`未检测到发布日期${articleNote}，AI 平台偏好标注时间的内容`);
 
   if (d.authority.breakdown.citationScore >= 5) good.push('外部权威来源引用数量充足');
   else if (d.authority.breakdown.citationScore === 0) warn.push('建议添加指向权威外部来源的链接');
@@ -184,7 +186,7 @@ function levelDesc(level) {
 }
 
 // ─── Main renderer ────────────────────────────────────────────────────────────
-function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, context, url: auditUrl }) {
+function renderHtmlReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult, articleUrl, context, url: auditUrl }) {
   const brand = context?.brand || 'Unknown Brand';
   const url   = context?.url || auditUrl || '';
   const date  = new Date().toISOString().slice(0, 10);

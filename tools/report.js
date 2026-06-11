@@ -253,7 +253,7 @@ function buildMonitoringQueries(context) {
   return [...base, ...extra];
 }
 
-function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, context, url: auditUrl }) {
+function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult, articleUrl, context, url: auditUrl }) {
   const brand = context?.brand || auditUrl?.replace(/https?:\/\//, '').replace(/\/$/, '') || 'Unknown';
   const url = context?.url || auditUrl || '';
   const date = new Date().toISOString().slice(0, 10);
@@ -291,6 +291,21 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     narrative = `${brand} 的技术访问和内容结构已有一定基础，当前主要瓶颈是第三方存在感不足 — AI 系统更倾向引用在外部平台被反复提及的实体。`;
   }
 
+  // Article page authority evidence line
+  const articleEvidenceLine = (() => {
+    if (!articleSchemaResult || articleSchemaResult.error) return null;
+    const ad = articleSchemaResult.authorDate || {};
+    const sc = articleSchemaResult.schema || {};
+    const found = [];
+    if (ad.hasAuthor) found.push('✅ 有作者');
+    else found.push('❌ 无作者');
+    if (ad.hasPublishDate) found.push('✅ 有发布日期');
+    else found.push('❌ 无发布日期');
+    if (ad.hasModifiedDate) found.push('✅ 有修改日期');
+    const schemas = sc.found && sc.found.length ? sc.found.join(', ') : '无 schema';
+    return `文章页 (${articleUrl})  ${found.join('  ')}  Schema: ${schemas}`;
+  })();
+
   const lines = [
     `## GEO 诊断报告 — ${brand}（${date}）`,
     url ? `**目标网站**: ${url}` : '',
@@ -317,6 +332,8 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     renderLlms(llmsResult),
     '',
     renderSchema(schemaResult),
+    articleEvidenceLine ? '' : null,
+    articleEvidenceLine,
     '',
   ];
 

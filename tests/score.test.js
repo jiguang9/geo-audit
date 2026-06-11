@@ -91,6 +91,25 @@ test('scoreAuthority — original research adds points', () => {
   assert.ok(s2.raw > s1.raw);
 });
 
+test('scoreAuthority — article page author/date used over homepage when provided', () => {
+  // Homepage has no author/date, article page does
+  const homepageOnly = scoreAuthority(bareSchema, {});
+  const withArticle = scoreAuthority(bareSchema, {}, goodSchema);
+  assert.ok(withArticle.raw > homepageOnly.raw, 'Article page should improve authority score');
+  assert.equal(withArticle.articleChecked, true);
+});
+
+test('scoreAuthority — homepage org schema still counts when article provided', () => {
+  // Homepage has Organization schema; article has author/date
+  const articleWithAuthor = {
+    ...bareSchema,
+    authorDate: { hasAuthor: true, hasPublishDate: true, hasModifiedDate: true },
+  };
+  const s = scoreAuthority(goodSchema, {}, articleWithAuthor);
+  assert.ok(s.breakdown.authorScore === 6, 'Author score from article page');
+  assert.ok(s.breakdown.schemaAuthorityScore > 0, 'Org schema score from homepage');
+});
+
 // scorePresence tests
 test('scorePresence — no evidence returns unknown', () => {
   const s = scorePresence({});

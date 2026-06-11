@@ -52,15 +52,24 @@ function scoreStructure(schemaResult, contentResult) {
   };
 }
 
-function scoreAuthority(schemaResult, presenceEvidence) {
+function scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult) {
   if (!schemaResult || schemaResult.error) return { raw: 0, max: 25, breakdown: {}, skipped: true };
 
+  // Homepage signals: org schema, external links (representative of the brand)
   const s = schemaResult.schema || {};
-  const ad = schemaResult.authorDate || {};
-
-  // External citations (0-8): more unique external domains = more credible
   const extLinks = schemaResult.externalLinks || 0;
   const citationScore = extLinks >= 10 ? 8 : extLinks >= 5 ? 5 : extLinks >= 2 ? 3 : 0;
+
+  // Schema authority signals (0-5): prefer homepage for org/brand schemas
+  const authoritySchemas = ['Article', 'Organization', 'WebSite'];
+  const schemaAuthorityScore = Math.min(5, s.found ? s.found.filter(t => authoritySchemas.includes(t)).length * 2 : 0);
+
+  // Article-level signals: author and date are meaningful on article/blog pages,
+  // not on marketing homepages. Use articleSchemaResult when available.
+  const adSource = (articleSchemaResult && !articleSchemaResult.error)
+    ? articleSchemaResult
+    : schemaResult;
+  const ad = adSource.authorDate || {};
 
   // Author attribution (0-6)
   const authorScore = ad.hasAuthor ? 6 : 0;
@@ -70,10 +79,6 @@ function scoreAuthority(schemaResult, presenceEvidence) {
   if (ad.hasPublishDate) freshnessScore += 3;
   if (ad.hasModifiedDate) freshnessScore += 3;
 
-  // Schema authority signals (0-5): Article, Organization signal credibility
-  const authoritySchemas = ['Article', 'Organization', 'WebSite'];
-  const schemaAuthorityScore = Math.min(5, s.found ? s.found.filter(t => authoritySchemas.includes(t)).length * 2 : 0);
-
   // Original research / statistics from presence evidence (0-5, user-provided)
   const researchScore = presenceEvidence && presenceEvidence.hasOriginalResearch ? 5 : 0;
 
@@ -81,6 +86,7 @@ function scoreAuthority(schemaResult, presenceEvidence) {
   return {
     raw,
     max: 25,
+    articleChecked: !!(articleSchemaResult && !articleSchemaResult.error),
     breakdown: { citationScore, authorScore, freshnessScore, schemaAuthorityScore, researchScore },
   };
 }
@@ -155,9 +161,9 @@ function scoreTechnical(robotsResult, llmsResult, schemaResult) {
   return { raw: Math.min(20, raw), max: 20 };
 }
 
-function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence }) {
+function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult }) {
   const structure = scoreStructure(schemaResult, contentResult);
-  const authority = scoreAuthority(schemaResult, presenceEvidence);
+  const authority = scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult);
   const presence = scorePresence(presenceEvidence);
   const technical = scoreTechnical(robotsResult, llmsResult, schemaResult);
 
