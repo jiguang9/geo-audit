@@ -155,8 +155,6 @@ async function main() {
         `| Authority / credibility  | ${d.authority.raw}/${d.authority.max} |`,
         `| Third-party presence     | ${d.presence.raw !== null ? d.presence.raw : '?'}/${d.presence.max} |`,
         `| Technical accessibility  | ${d.technical.raw}/${d.technical.max} |`,
-        '',
-        `**HTML report:** \`${outFile}\``,
       ].join('\n'));
     } else {
       const report = renderReport(result.scoreData, { ...result, url: result.url });

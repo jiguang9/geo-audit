@@ -56,7 +56,7 @@ node tools/audit.js <url> --html --brand "品牌名"
 node tools/audit.js <url> --html
 ```
 
-Pass `--brand` only when already known. After running, share the HTML file path with the user.
+Pass `--brand` only when already known.
 
 **Step 3 — Spot-check 2–3 key pages** using sample URLs from Step 1
 
