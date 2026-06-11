@@ -25,50 +25,37 @@ Before running any check:
 - Make at most one HTTP request per check — no crawling, no spidering
 - For third-party presence checks, ask the user to supply evidence; do not scrape competitor or review sites
 
-## Phase 0 — Load Context
+## Phase 0 — Start Immediately
 
-Check the user's project root for `.agents/geo-audit-context.md`.
+**Run the audit now. Do not ask questions first.**
 
-If the file exists, read it and proceed to Phase 1.
+1. Extract the URL from the user's message. If no URL was given, ask for one — that is the only required input.
+2. Check if the user already mentioned a brand name in their message. If yes, pass it via `--brand`. If not, skip the flag — the report will use the domain name.
+3. Check the user's project root for `.agents/geo-audit-context.md`. If it exists, read it for additional context (brand, industry, market); pass what's available as CLI flags.
+4. Run the audit (see Phase 1). Do **not** ask the user to fill in industry, platforms, queries, competitors, or market before running.
 
-If it does not exist, collect the following before continuing:
-
-1. **URL** — the target website (must be publicly accessible)
-2. **Brand name** — how the brand is referred to in AI answers
-3. **Industry** — SaaS / e-commerce / content media / local business / B2B
-4. **Target AI platforms** — all, or specific (ChatGPT, Perplexity, DeepSeek, 豆包, 文心一言, etc.)
-5. **Target market / language** — China, US, global; Chinese, English, bilingual
-6. **Top 3 queries** — the questions the user most wants AI to cite them for
-7. **Competitors** — 2–3 competitor or peer brands to benchmark against
-
-Do not write collected context back into the skill directory. Offer to save it to `.agents/geo-audit-context.md` in the user's project root for future runs.
+After the audit is complete and results are shown, you may briefly note (in one sentence) that adding context to `.agents/geo-audit-context.md` will improve presence scoring — but only if presence was marked unknown.
 
 ## Phase 1 — Automated Technical Checks
 
-Run the following tools against the target URL. Each tool is a standalone Node.js script requiring no external dependencies.
+Run all checks at once with the main entry. Always use `--html` to generate the visual report.
 
 ```bash
-node tools/robots-checker.js <url>
-node tools/llms-txt-checker.js <url>
-node tools/schema-inspector.js <url>
-node tools/content-structure.js <url>
-```
+# Minimal — just a URL (works immediately, no context needed)
+node tools/audit.js <url> --html
 
-Or run all at once with the main entry (always use `--html` to generate the visual report):
-
-```bash
-# Basic — brand name shown in report header
+# With brand name (use when brand is known)
 node tools/audit.js <url> --html --brand "品牌名"
 
-# With more context
+# With full context
 node tools/audit.js <url> --html --brand "深信服" --industry SaaS --market China
 
-# JSON for further processing
+# JSON for programmatic use
 node tools/audit.js <url> --json
 ```
 
-**Always pass `--brand` when you know the brand name** — it appears in the report header.
-After running, share the HTML file path with the user so they can open it in a browser.
+Pass `--brand` only when you already know the brand name — never ask for it before running.
+After running, tell the user the HTML report path so they can open it in a browser.
 
 ## Phase 2 — Three-Pillar Evaluation
 
@@ -114,7 +101,7 @@ See `references/scoring.md` for breakdown rules.
 
 After scoring, provide targeted recommendations for the user's selected AI platforms. Each platform has different citation patterns and optimisation levers. See `references/platforms.md` for platform-by-platform guidance with confidence levels (`confirmed`, `likely`, `hypothesis`).
 
-Only output recommendations for the platforms the user selected in Phase 0. Do not speculate about platforms not selected.
+If the user specified target platforms in their message or context file, focus recommendations on those. Otherwise, default to the top global platforms (ChatGPT, Perplexity, Google AI Overviews) plus the top China platforms (DeepSeek, Doubao, ERNIE Bot) when market context suggests China.
 
 ## Phase 5 — Monitoring
 
