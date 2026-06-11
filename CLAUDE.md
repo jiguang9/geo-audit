@@ -19,21 +19,57 @@ npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 
 ## Running Tools (Claude Code)
 
-Use dynamic injection to run tools and embed results:
+Run the full audit first, then spot-check individual pages:
 
+```bash
+# Full audit (Markdown report to stdout)
+node tools/audit.js https://example.com --brand "Brand Name"
+
+# Individual checks
+node tools/robots-checker.js https://example.com
+node tools/llms-txt-checker.js https://example.com
+node tools/sitemap-checker.js https://example.com
+node tools/schema-inspector.js https://example.com/about
+node tools/content-structure.js https://example.com/blog/post
 ```
-!`node tools/audit.js https://example.com --brand "Brand Name"`
-!`node tools/robots-checker.js https://example.com`
-!`node tools/schema-inspector.js https://example.com`
-```
 
-Always pass `--brand` with the brand name you collected — it appears in the report header.
+Flags (`--brand`, `--industry`, `--market`) can appear in any order relative to the URL.
+The `--json` flag outputs structured JSON instead of Markdown.
 
-## Context
+## Report Sections
 
-Read `.agents/geo-audit-context.md` from the user's project root before running.
-If absent, collect: URL, brand name, industry, target AI platforms, target
-market/language, top 3 queries, and 2–3 competitor brands.
+The Markdown report includes:
+
+- **GEO 得分** — 4-dimension score with confidence symbols (●/◐/○)
+- **关键技术证据** — robots.txt, llms.txt, Schema types found/missing, Schema attribute gaps (`Organization.sameAs`, `Article.dateModified`, etc.), article-page author/date signals, quotable content blocks and missing block types
+- **引用证据矩阵** — query × platform matrix when `citationEvidence` is in context
+- **第三方存在感验证** — search links for manual brand presence checks (shown when presence is unknown)
+- **引用失败诊断** — auto-diagnosed failure codes (T-ACCESS / T-INDEX / C-MATCH / C-ANSWER / A-AUTH / A-FRESH / P-ABSENCE) with specific fix guidance
+- **P0 / P1 / P2 actions** — prioritised fixes with copy-paste code snippets
+- **推荐监控** — concrete queries to test monthly on AI platforms
+
+## Context File
+
+Read `.agents/geo-audit-context.md` (or `.json`) from the user's project root
+before running. Supported fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `url` | string | Target website |
+| `brand` | string | Brand name for report header |
+| `industry` | string | SaaS / ecommerce / media / B2B / local |
+| `market` | string | China / US / global |
+| `platforms` | string | Comma-separated target AI platforms |
+| `queries` | string | Top queries to be cited for |
+| `competitors` | string | Competitor brands |
+| `presence` | JSON object | Third-party presence evidence (unlocks 25-pt dimension) |
+| `citationEvidence` | JSON array | Query × platform citation test results |
+
+**presence** object fields: `hasWikipedia`, `hasBaiduBaike`, `hasZhihu` (bool),
+`reviewPlatformCount`, `mediaMentionCount`, `socialPlatformCount` (int).
+
+**citationEvidence** array item fields: `query`, `platform`, `brandMentioned`,
+`officialUrlCited` (bool), `competitorsCited` (string array).
 
 Do not write context back to the skill installation directory.
 
@@ -41,3 +77,4 @@ Do not write context back to the skill installation directory.
 
 Only fetch publicly accessible URLs. Block localhost, private IPs (10.x, 192.168.x,
 172.16-31.x), .local / .internal domains, and any URL requiring authentication.
+Make at most one HTTP request per check — no crawling, no spidering.

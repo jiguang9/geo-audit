@@ -42,7 +42,8 @@ Why isn't my content cited by ChatGPT?
 做一次 GEO 诊断
 ```
 
-The skill collects context, runs automated checks, and outputs a scored report.
+The skill runs automated checks immediately and outputs a scored report with
+actionable recommendations.
 
 ### As a CLI tool
 
@@ -50,7 +51,10 @@ The skill collects context, runs automated checks, and outputs a scored report.
 # Full audit — Markdown report (stdout)
 node tools/audit.js https://example.com --brand "Brand"
 
-# Full audit — JSON output (for scripting / agent processing)
+# Flags can appear in any order
+node tools/audit.js --brand "Brand" --industry SaaS https://example.com
+
+# JSON output for scripting / agent processing
 node tools/audit.js https://example.com --json
 
 # Individual checks
@@ -61,14 +65,38 @@ node tools/schema-inspector.js https://example.com
 node tools/content-structure.js https://example.com
 ```
 
+**Named flags** (all optional, override context file):
+
+| Flag | Example | Notes |
+|------|---------|-------|
+| `--brand` | `--brand "Acme"` | Brand name in report header |
+| `--industry` | `--industry SaaS` | SaaS / ecommerce / media / B2B / local |
+| `--market` | `--market China` | China / US / global |
+
+## What the Report Covers
+
+Each audit produces a Markdown report with:
+
+- **GEO Score** — 4-dimension score (0–100) with confidence indicators
+- **关键技术证据** — robots.txt crawler access, llms.txt status, Schema markup found/missing, article-page authority signals, quotable content blocks
+- **Schema 缺失属性** — attribute-level gaps beyond type-level (e.g. `Organization.sameAs`, `Article.dateModified`, `Product.offers`)
+- **引用失败诊断** — auto-diagnosed failure codes (T-ACCESS / T-INDEX / C-MATCH / C-ANSWER / A-AUTH / A-FRESH / P-ABSENCE) with per-code fix guidance
+- **引用证据矩阵** — query × platform citation matrix (when `citationEvidence` provided in context)
+- **第三方存在感验证** — search links for GitHub, G2, 知乎, Product Hunt, 百度百科, Capterra to verify brand presence
+- **P0 / P1 / P2 actions** — prioritised fixes with copy-paste code templates
+- **推荐监控查询** — 7–10 concrete queries to test monthly across AI platforms
+
 ## GEO Score
 
 | Dimension | Weight | What it measures |
 |-----------|--------|-----------------|
-| Structure extractability | 30 | Headings, FAQ, tables, paragraph independence |
-| Authority / credibility | 25 | Citations, authorship, freshness, schema signals |
+| Structure extractability | 30 | Headings, FAQ schema, tables/lists, quotable paragraphs |
+| Authority / credibility | 25 | Citations, authorship, freshness, Organization schema |
 | Third-party presence | 25 | Zhihu, Wikipedia, review sites, media mentions |
 | Technical accessibility | 20 | robots.txt, llms.txt, Schema markup, canonical |
+
+When third-party presence evidence is not provided, that dimension is scored `unknown`
+and the total is shown as `N/75` rather than penalising with a zero.
 
 **Score → Maturity level:**
 
@@ -83,24 +111,43 @@ node tools/content-structure.js https://example.com
 ## AI Platforms Covered
 
 **Global:** ChatGPT, ChatGPT Search, Perplexity, Google AI Overviews, Claude,
-Gemini, Microsoft Copilot, Meta AI
+Microsoft Copilot, Meta AI
 
 **China:** DeepSeek, Doubao (豆包), ERNIE Bot (文心一言), Qwen (通义千问),
-Kimi, Hunyuan (混元), Spark (讯飞星火), ChatGLM (智谱清言)
+Kimi
 
 ## Context File
 
-Create `.agents/geo-audit-context.md` in your project root to skip interactive
-collection on subsequent runs. The skill will read it automatically.
+Create `.agents/geo-audit-context.md` (or `.json`) in your project root to
+provide additional context. The skill reads it automatically on every run.
 
-Required fields:
-- `url` — target website
-- `brand` — brand name
-- `industry` — SaaS / ecommerce / media / local / B2B
-- `platforms` — target AI platforms
-- `market` — China / US / global, language preference
-- `queries` — top 3 queries you want to be cited for
-- `competitors` — 2–3 competitor brands
+### Markdown format
+
+```markdown
+url: https://example.com
+brand: Acme
+industry: SaaS
+market: global
+platforms: ChatGPT, Perplexity, Google AI Overviews
+queries: what is the best X tool, how to do Y, X vs competitor
+competitors: CompetitorA, CompetitorB
+```
+
+### Presence evidence (unlocks the 25-pt presence dimension)
+
+```markdown
+presence: {"hasWikipedia": false, "hasBaiduBaike": false, "hasZhihu": true, "reviewPlatformCount": 2, "mediaMentionCount": 5, "socialPlatformCount": 3}
+```
+
+### Citation evidence (enables query × platform matrix)
+
+```markdown
+citationEvidence: [{"query": "best X tool", "platform": "ChatGPT", "brandMentioned": true, "officialUrlCited": false, "competitorsCited": ["CompA"]}, {"query": "best X tool", "platform": "Perplexity", "brandMentioned": false, "officialUrlCited": false, "competitorsCited": []}]
+```
+
+### JSON format
+
+Alternatively, use `.agents/geo-audit-context.json` with the same keys as a JSON object.
 
 ## Tests
 
@@ -108,7 +155,10 @@ Required fields:
 npm test
 ```
 
-Uses Node.js built-in test runner (`node:test`), zero dependencies.
+Uses Node.js built-in test runner (`node:test`), zero dependencies. Covers:
+robots.txt parsing (RFC-compliant, wildcard, multi-UA, deep paths), llms.txt
+validation, schema inspection, content structure + extractable block detection,
+CLI argument ordering, failure taxonomy, citation matrix, and report rendering.
 
 ## License
 
