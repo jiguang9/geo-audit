@@ -47,11 +47,8 @@ The skill collects context, runs automated checks, and outputs a scored report.
 ### As a CLI tool
 
 ```bash
-# Full audit — HTML dashboard (recommended)
-node tools/audit.js https://example.com --html --brand "Brand"
-
-# Full audit — Markdown report
-node tools/audit.js https://example.com
+# Full audit — Markdown report (stdout)
+node tools/audit.js https://example.com --brand "Brand"
 
 # Full audit — JSON output (for scripting / agent processing)
 node tools/audit.js https://example.com --json

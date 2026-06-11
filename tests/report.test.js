@@ -102,6 +102,59 @@ test('renderReport — output is non-empty string', () => {
   assert.ok(report.length > 200, 'Report should be substantial');
 });
 
+// ── Schema missingProperties display tests ──────────────────────────────────
+
+const schemaWithMissingProps = {
+  headings: { h1Count: 1, h2Count: 2, h3Count: 0, hasProperHierarchy: true },
+  schema: {
+    found: ['Organization'],
+    missing: [],
+    missingProperties: [
+      { type: 'Organization', property: 'sameAs' },
+      { type: 'Organization', property: 'logo' },
+      { type: 'Organization', property: 'description' },
+    ],
+  },
+  structure: { tables: 0, orderedLists: 0, unorderedLists: 0, detailsBlocks: 0, hasFaqClass: false, hasFaqSchema: false },
+  authorDate: { hasAuthor: false, hasPublishDate: false, hasModifiedDate: false },
+  meta: { title: 'Test', description: 'Test.', canonical: 'https://example.com/' },
+  externalLinks: 2,
+};
+
+test('renderReport — schema missingProperties appear in report', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: schemaWithMissingProps, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(report.includes('缺失属性'), 'Should include 缺失属性 label');
+  assert.ok(report.includes('Organization.sameAs'), 'Should list Organization.sameAs');
+  assert.ok(report.includes('Organization.logo'), 'Should list Organization.logo');
+});
+
+// ── Content evidence (quotableBlocks / missingBlocks) display tests ───────────
+
+const contentWithQuotables = {
+  quotableBlocks: [
+    { type: 'definition', text: 'GEO refers to Generative Engine Optimization, which optimizes content for AI citation.', reason: '直接定义术语，AI 易截取' },
+    { type: 'statistic',  text: '78% of users prefer AI-cited answers over traditional search results.',                  reason: '含量化数据，增加引用可信度' },
+  ],
+  missingBlocks: ['step', 'citation', 'faq'],
+};
+
+test('renderReport — quotableBlocks appear in report', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: contentWithQuotables, presenceEvidence: {}, context });
+  assert.ok(report.includes('可引用片段'), 'Should include 可引用片段 section');
+  assert.ok(report.includes('[definition]') || report.includes('definition'), 'Should show definition block type');
+  assert.ok(report.includes('GEO refers to'), 'Should include quotable text excerpt');
+});
+
+test('renderReport — missingBlocks appear in report', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: contentWithQuotables, presenceEvidence: {}, context });
+  assert.ok(report.includes('缺失内容块'), 'Should include 缺失内容块 label');
+  assert.ok(report.includes('step'), 'Should list step as missing block');
+  assert.ok(report.includes('faq'), 'Should list faq as missing block');
+});
+
 // ── Failure taxonomy tests ──────────────────────────────────────────────────
 
 const blockedRobots = {

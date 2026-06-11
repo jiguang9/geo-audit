@@ -45,11 +45,8 @@ This skill reads `.agents/geo-audit-context.md` from the **user's project root**
 All tools are zero-dependency Node.js scripts (requires Node ≥ 18).
 
 ```bash
-# Full audit (HTML dashboard + inline summary)
-node tools/audit.js https://example.com --html --brand "Brand"
-
-# Full audit (Markdown output)
-node tools/audit.js https://example.com
+# Full audit (Markdown output — stdout)
+node tools/audit.js https://example.com --brand "Brand"
 
 # Full audit (JSON output for programmatic use)
 node tools/audit.js https://example.com --json

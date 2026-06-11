@@ -25,6 +25,10 @@ const path = require('path');
 function parseArgs(argv) {
   const args = argv.slice(2);
   const url = args.find(a => !a.startsWith('--'));
+  if (args.includes('--html')) {
+    process.stderr.write('Error: --html has been removed. Output is now Markdown (stdout) or --json.\n');
+    process.exit(1);
+  }
   const json = args.includes('--json');
   const format = json ? 'json' : 'markdown';
 

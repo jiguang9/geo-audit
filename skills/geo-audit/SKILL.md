@@ -138,7 +138,7 @@ Provide a monitoring plan using `references/monitor.md`. Include:
 
 ## Output Format
 
-Write the report directly in the conversation — do not reference the tool's stdout table. The HTML file is the visual dashboard; the conversation response is the full analysis.
+Write the report directly in the conversation — do not reproduce the raw tool stdout verbatim. The conversation response is the full analysis.
 
 ```
 ## GEO 诊断报告 — {Brand}（{Date}）
