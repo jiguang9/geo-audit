@@ -87,6 +87,19 @@ After the automated checks, evaluate the three GEO pillars using the reference m
 
 Score this dimension only from confirmed evidence. Mark as `unknown` if evidence is not provided.
 
+## Phase 2b — Citation Evidence (Optional, Evidence-Based)
+
+If the user has tested AI platforms manually, ask for their findings using this structure:
+
+> "Have you searched for [top queries] on ChatGPT, Perplexity, or Chinese platforms? If so, did [Brand] appear? Was the official URL cited?"
+
+Record results using the citation matrix in `references/citation.md`. Use confirmed citations to:
+- Adjust presence scoring (social/media/review counts)
+- Identify which failure taxonomy codes apply (T-ACCESS, C-MATCH, A-AUTH, etc.)
+- Prioritise recommendations (fix what is causing the specific failure)
+
+If the user has no citation evidence yet, skip this phase and note in the report that presence scoring is `unknown`.
+
 ## Phase 3 — Score and Report
 
 Scoring model (100 points total):

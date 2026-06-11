@@ -136,3 +136,41 @@ test('parseCrawlerStatus — multi-UA group: second block does not bleed into fi
   assert.equal(parseCrawlerStatus(MULTI_UA_MIXED, 'ClaudeBot'), 'blocked');
   assert.equal(parseCrawlerStatus(MULTI_UA_MIXED, 'Googlebot'), 'allowed');
 });
+
+// Wildcard and longer-match tests
+const WILDCARD_JSON = `
+User-agent: GPTBot
+Disallow: /*.json$
+`;
+
+const ALLOW_OVERRIDE = `
+User-agent: GPTBot
+Disallow: /private/
+Allow: /private/public/
+`;
+
+const LONGER_DISALLOW = `
+User-agent: GPTBot
+Allow: /
+Disallow: /blog/
+`;
+
+test('parseCrawlerStatus — wildcard disallow does not block homepage', () => {
+  assert.equal(parseCrawlerStatus(WILDCARD_JSON, 'GPTBot', '/'), 'allowed');
+});
+
+test('parseCrawlerStatus — wildcard disallow blocks matching path', () => {
+  assert.equal(parseCrawlerStatus(WILDCARD_JSON, 'GPTBot', '/data.json'), 'blocked');
+});
+
+test('parseCrawlerStatus — longer Allow overrides shorter Disallow', () => {
+  assert.equal(parseCrawlerStatus(ALLOW_OVERRIDE, 'GPTBot', '/private/public/page'), 'allowed');
+});
+
+test('parseCrawlerStatus — longer Disallow overrides shorter Allow for root', () => {
+  assert.equal(parseCrawlerStatus(LONGER_DISALLOW, 'GPTBot', '/blog/post-1'), 'blocked');
+});
+
+test('parseCrawlerStatus — homepage still accessible when only blog is disallowed', () => {
+  assert.equal(parseCrawlerStatus(LONGER_DISALLOW, 'GPTBot', '/'), 'allowed');
+});

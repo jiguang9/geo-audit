@@ -13,7 +13,38 @@ const {
   countExternalLinks,
 } = require('./shared/html.js');
 
-const RECOMMENDED_SCHEMAS = ['Article', 'FAQPage', 'HowTo', 'Product', 'Organization', 'BreadcrumbList', 'WebSite'];
+const RECOMMENDED_BY_TYPE = {
+  homepage:   ['Organization', 'WebSite'],
+  article:    ['Article', 'BreadcrumbList'],
+  product:    ['Product', 'AggregateRating'],
+  about:      ['Person', 'Organization'],
+  faq:        ['FAQPage'],
+  comparison: ['ItemList', 'FAQPage'],
+  pricing:    ['Product'],
+  general:    ['WebPage'],
+};
+
+function detectPageType(urlStr, schemaFound) {
+  let pathname = '/';
+  try { pathname = new URL(urlStr).pathname.toLowerCase(); } catch (_) {}
+
+  // Schema-first detection
+  const sf = schemaFound || [];
+  if (sf.includes('BlogPosting') || sf.includes('Article') || sf.includes('NewsArticle')) return 'article';
+  if (sf.includes('Product') || sf.includes('WebApplication') || sf.includes('SoftwareApplication')) return 'product';
+  if (sf.includes('FAQPage')) return 'faq';
+  if (sf.includes('ItemList') && sf.includes('Product')) return 'comparison';
+
+  // URL pattern fallback
+  if (pathname === '/' || pathname === '') return 'homepage';
+  if (/\/blog\/|\/post\/|\/article\/|\/news\//.test(pathname)) return 'article';
+  if (/\/about|\/team|\/company/.test(pathname)) return 'about';
+  if (/\/product|\/tool|\/app|\/service/.test(pathname)) return 'product';
+  if (/\/faq|\/help/.test(pathname)) return 'faq';
+  if (/\/vs-|\/compare|\/alternative/.test(pathname)) return 'comparison';
+  if (/\/pricing/.test(pathname)) return 'pricing';
+  return 'general';
+}
 
 function collectSchemaTypes(jsonLdItems) {
   const types = new Set();
@@ -60,7 +91,10 @@ async function inspectSchema(pageUrl) {
   const microdataTypes = extractMicrodataTypes(html);
   // Merge both sources; track origin for reporting
   const schemaTypes = [...new Set([...jsonLdTypes, ...microdataTypes])];
-  const missing = RECOMMENDED_SCHEMAS.filter(t => !schemaTypes.includes(t));
+
+  const pageType = detectPageType(url, schemaTypes);
+  const recommendedForType = RECOMMENDED_BY_TYPE[pageType] || RECOMMENDED_BY_TYPE.general;
+  const missing = recommendedForType.filter(t => !schemaTypes.includes(t));
 
   const meta = extractMeta(html);
   const headings = extractHeadings(html);
@@ -71,6 +105,7 @@ async function inspectSchema(pageUrl) {
   return {
     url,
     httpStatus: res.status,
+    pageType,
     meta,
     headings: {
       h1Count: headings.h1.length,
@@ -98,8 +133,9 @@ if (require.main === module) {
     if (r.error) { console.error('Error:', r.error); process.exit(1); }
 
     console.log(`\nSchema Inspection — ${r.url}\n`);
+    console.log(`Page type: ${r.pageType}`);
 
-    console.log('Meta');
+    console.log('\nMeta');
     console.log(`  Title:       ${r.meta.title ? '✅ ' + r.meta.title.slice(0, 60) : '❌ missing'}`);
     console.log(`  Description: ${r.meta.description ? '✅' : '❌ missing'}`);
     console.log(`  Canonical:   ${r.meta.canonical ? '✅ ' + r.meta.canonical : '❌ missing'}`);
@@ -123,4 +159,4 @@ if (require.main === module) {
   }).catch(err => { console.error(err.message); process.exit(1); });
 }
 
-module.exports = { inspectSchema, collectSchemaTypes };
+module.exports = { inspectSchema, collectSchemaTypes, detectPageType };

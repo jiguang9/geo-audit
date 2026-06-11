@@ -10,6 +10,13 @@ function levelLabel(level) {
   }[level] || 'Unknown';
 }
 
+function confidenceSymbol(c) {
+  if (c === 'high') return '●';
+  if (c === 'medium') return '◐';
+  if (c === 'low') return '○';
+  return '—';
+}
+
 function statusIcon(score, max) {
   if (score === null) return '❓';
   const pct = score / max;
@@ -26,6 +33,14 @@ function renderRobots(robotsResult) {
     `  ${icon[c.result] || '❓'} ${c.name.padEnd(22)} ${c.result.padEnd(15)} ${c.platform}`
   );
   return `robots.txt   ${robotsResult.url}\n${lines.join('\n')}`;
+}
+
+function citationRiskWarning(robotsResult) {
+  if (!robotsResult || !robotsResult.crawlers) return null;
+  const highRisk = robotsResult.crawlers.filter(c => c.citationRisk === 'high');
+  if (highRisk.length === 0) return null;
+  const names = highRisk.map(c => c.name).join(', ');
+  return `⚠️  引用风险：以下爬虫被屏蔽（直接影响引用） — ${names}`;
 }
 
 function renderLlms(llmsResult) {
@@ -317,17 +332,18 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     '',
     '### GEO 得分',
     '',
-    '| 维度 | 得分 | 判断 |',
-    '|------|-----:|------|',
-    `| 技术可访问性 | ${d.technical.raw}/${d.technical.max} | ${statusIcon(d.technical.raw, d.technical.max)} |`,
-    `| 内容可摘取性 | ${d.structure.raw}/${d.structure.max} | ${statusIcon(d.structure.raw, d.structure.max)} |`,
-    `| 实体与权威信号 | ${d.authority.raw}/${d.authority.max} | ${statusIcon(d.authority.raw, d.authority.max)} |`,
-    `| 第三方存在感 | ${presenceDisplay} | ${statusIcon(d.presence.raw, d.presence.max)} |`,
-    `| **总分** | **${scoreData.total}/${scoreData.totalMax}** | **${levelLabel(scoreData.level)}** |`,
+    '| 维度 | 得分 | 置信度 | 判断 |',
+    '|------|-----:|:------:|------|',
+    `| 技术可访问性 | ${d.technical.raw}/${d.technical.max} | ${confidenceSymbol(d.technical.confidence)} | ${statusIcon(d.technical.raw, d.technical.max)} |`,
+    `| 内容可摘取性 | ${d.structure.raw}/${d.structure.max} | ${confidenceSymbol(d.structure.confidence)} | ${statusIcon(d.structure.raw, d.structure.max)} |`,
+    `| 实体与权威信号 | ${d.authority.raw}/${d.authority.max} | ${confidenceSymbol(d.authority.confidence)} | ${statusIcon(d.authority.raw, d.authority.max)} |`,
+    `| 第三方存在感 | ${presenceDisplay} | ${confidenceSymbol(d.presence.confidence)} | ${statusIcon(d.presence.raw, d.presence.max)} |`,
+    `| **总分** | **${scoreData.total}/${scoreData.totalMax}** | | **${levelLabel(scoreData.level)}** |`,
     '',
     '### 关键技术证据',
     '',
     renderRobots(robotsResult),
+    citationRiskWarning(robotsResult),
     '',
     renderLlms(llmsResult),
     '',

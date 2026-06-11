@@ -4,20 +4,34 @@
 const { fetchText } = require('./shared/fetch.js');
 const { normalizeUrl, isPublicUrl } = require('./shared/url.js');
 
+async function getSitemapUrlsFromRobots(baseUrl) {
+  try {
+    const res = await fetchText(baseUrl.replace(/\/$/, '') + '/robots.txt', { timeout: 5000 });
+    if (res.status !== 200) return [];
+    return res.body.split(/\r?\n/)
+      .map(l => { const m = /^Sitemap:\s*(.+)/i.exec(l.trim()); return m ? m[1].trim() : null; })
+      .filter(Boolean);
+  } catch (_) { return []; }
+}
+
 async function checkSitemap(baseUrl) {
   const base = baseUrl.replace(/\/$/, '');
-  const candidates = ['/sitemap.xml', '/sitemap_index.xml', '/sitemap/sitemap.xml'];
+  const robotsSitemaps = await getSitemapUrlsFromRobots(base);
+  const candidates = [...new Set([...robotsSitemaps, base + '/sitemap.xml', base + '/sitemap_index.xml'])];
 
-  for (const path of candidates) {
+  for (const candidate of candidates) {
+    // candidates may be absolute URLs (from robots.txt) or relative paths
+    const fetchUrl = /^https?:\/\//i.test(candidate) ? candidate : base + candidate;
     let res;
     try {
-      res = await fetchText(base + path, { timeout: 8000 });
+      res = await fetchText(fetchUrl, { timeout: 8000 });
     } catch (_) {
       continue;
     }
     if (res.status !== 200) continue;
     const body = res.body || '';
     if (!body.includes('<loc>')) continue;
+    const path = /^https?:\/\//i.test(candidate) ? candidate.replace(base, '') || candidate : candidate;
 
     const locs = (body.match(/<loc>([^<]+)<\/loc>/g) || [])
       .map(m => m.replace(/<\/?loc>/g, '').trim());

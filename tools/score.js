@@ -48,6 +48,7 @@ function scoreStructure(schemaResult, contentResult) {
   return {
     raw,
     max: 30,
+    confidence: 'medium',
     breakdown: { headingScore, faqScore, listScore, paraScore, canonicalScore },
   };
 }
@@ -86,6 +87,7 @@ function scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult) {
   return {
     raw,
     max: 25,
+    confidence: articleSchemaResult && !articleSchemaResult.error ? 'medium' : 'low',
     articleChecked: !!(articleSchemaResult && !articleSchemaResult.error),
     breakdown: { citationScore, authorScore, freshnessScore, schemaAuthorityScore, researchScore },
   };
@@ -94,7 +96,7 @@ function scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult) {
 function scorePresence(presenceEvidence) {
   // If no evidence provided, return null (unknown) — do not penalise
   if (!presenceEvidence || Object.keys(presenceEvidence).length === 0) {
-    return { raw: null, max: 25, unknown: true };
+    return { raw: null, max: 25, unknown: true, confidence: 'unknown' };
   }
 
   const e = presenceEvidence;
@@ -118,6 +120,7 @@ function scorePresence(presenceEvidence) {
   return {
     raw,
     max: 25,
+    confidence: 'low',
     breakdown: { encyclopediaScore, reviewScore, mediaScore, socialScore },
   };
 }
@@ -158,7 +161,7 @@ function scoreTechnical(robotsResult, llmsResult, schemaResult) {
     if (m.canonical) raw += 1;
   }
 
-  return { raw: Math.min(20, raw), max: 20 };
+  return { raw: Math.min(20, raw), max: 20, confidence: 'high' };
 }
 
 function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult }) {
@@ -179,11 +182,19 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   const normalised = Math.round((total / totalMax) * 100);
   const level = normalised <= 20 ? 1 : normalised <= 40 ? 2 : normalised <= 60 ? 3 : normalised <= 80 ? 4 : 5;
 
+  // Overall confidence: minimum of the four non-unknown dimensions ('high' > 'medium' > 'low')
+  const confidenceRank = { high: 3, medium: 2, low: 1 };
+  const dimConfidences = [structure.confidence, authority.confidence, technical.confidence];
+  if (presence.confidence && presence.confidence !== 'unknown') dimConfidences.push(presence.confidence);
+  const minRank = dimConfidences.reduce((min, c) => Math.min(min, confidenceRank[c] || 1), 3);
+  const confidence = minRank === 3 ? 'high' : minRank === 2 ? 'medium' : 'low';
+
   return {
     total,
     totalMax,
     presenceUnknown: !presenceKnown,
     level,
+    confidence,
     dimensions: { structure, authority, presence, technical },
   };
 }
