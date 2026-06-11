@@ -4,9 +4,9 @@
 const { fetchText } = require('./shared/fetch.js');
 const { normalizeUrl, isPublicUrl } = require('./shared/url.js');
 
-async function getSitemapUrlsFromRobots(baseUrl) {
+async function getSitemapUrlsFromRobots(origin) {
   try {
-    const res = await fetchText(baseUrl.replace(/\/$/, '') + '/robots.txt', { timeout: 5000 });
+    const res = await fetchText(origin + '/robots.txt', { timeout: 5000 });
     if (res.status !== 200) return [];
     return res.body.split(/\r?\n/)
       .map(l => { const m = /^Sitemap:\s*(.+)/i.exec(l.trim()); return m ? m[1].trim() : null; })
@@ -15,13 +15,14 @@ async function getSitemapUrlsFromRobots(baseUrl) {
 }
 
 async function checkSitemap(baseUrl) {
-  const base = baseUrl.replace(/\/$/, '');
-  const robotsSitemaps = await getSitemapUrlsFromRobots(base);
-  const candidates = [...new Set([...robotsSitemaps, base + '/sitemap.xml', base + '/sitemap_index.xml'])];
+  let origin;
+  try { origin = new URL(normalizeUrl(baseUrl)).origin; } catch (_) { origin = baseUrl.replace(/\/$/, ''); }
+  const robotsSitemaps = await getSitemapUrlsFromRobots(origin);
+  const candidates = [...new Set([...robotsSitemaps, origin + '/sitemap.xml', origin + '/sitemap_index.xml'])];
 
   for (const candidate of candidates) {
     // candidates may be absolute URLs (from robots.txt) or relative paths
-    const fetchUrl = /^https?:\/\//i.test(candidate) ? candidate : base + candidate;
+    const fetchUrl = /^https?:\/\//i.test(candidate) ? candidate : origin + candidate;
     let res;
     try {
       res = await fetchText(fetchUrl, { timeout: 8000 });
@@ -31,7 +32,7 @@ async function checkSitemap(baseUrl) {
     if (res.status !== 200) continue;
     const body = res.body || '';
     if (!body.includes('<loc>')) continue;
-    const path = /^https?:\/\//i.test(candidate) ? candidate.replace(base, '') || candidate : candidate;
+    const path = /^https?:\/\//i.test(candidate) ? candidate.replace(origin, '') || candidate : candidate;
 
     const locs = (body.match(/<loc>([^<]+)<\/loc>/g) || [])
       .map(m => m.replace(/<\/?loc>/g, '').trim());

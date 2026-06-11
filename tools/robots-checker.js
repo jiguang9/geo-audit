@@ -2,7 +2,7 @@
 'use strict';
 
 const { fetchText } = require('./shared/fetch.js');
-const { joinPath, isPublicUrl } = require('./shared/url.js');
+const { joinPath, isPublicUrl, normalizeUrl } = require('./shared/url.js');
 
 const AI_CRAWLERS = [
   { name: 'GPTBot',             platform: 'ChatGPT',                   confidence: 'confirmed', role: 'training'  },
@@ -151,8 +151,11 @@ async function checkRobots(siteUrl) {
     .map(l => { const m = /^Sitemap:\s*(.+)/i.exec(l.trim()); return m ? m[1].trim() : null; })
     .filter(Boolean);
 
+  let targetPath = '/';
+  try { targetPath = new URL(normalizeUrl(siteUrl)).pathname || '/'; } catch (_) {}
+
   const crawlers = AI_CRAWLERS.map(c => {
-    const result = parseCrawlerStatus(res.body, c.name);
+    const result = parseCrawlerStatus(res.body, c.name, targetPath);
 
     let citationRisk;
     if (result === 'blocked' && ['search', 'indexing', 'general'].includes(c.role)) {

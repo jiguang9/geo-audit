@@ -66,6 +66,87 @@ function renderSchema(schemaResult) {
   ].join('\n');
 }
 
+function diagnoseFailureCodes(scoreData, robotsResult) {
+  const d = scoreData.dimensions;
+  const codes = [];
+
+  // T-ACCESS: search/indexing/general crawlers are blocked
+  if (robotsResult && robotsResult.crawlers) {
+    const blocked = robotsResult.crawlers.filter(c => c.citationRisk === 'high');
+    if (blocked.length > 0) {
+      codes.push({
+        code: 'T-ACCESS',
+        label: '技术可访问性故障',
+        detail: `以下爬虫被 robots.txt 屏蔽，AI 平台无法索引内容：${blocked.map(c => c.name).join('、')}`,
+        fix: '修改 robots.txt，允许上述爬虫访问；或在 Disallow 规则上方添加 Allow: / 覆盖。',
+      });
+    }
+  }
+
+  // T-INDEX: no sitemap / no llms.txt
+  const noLlms = !scoreData._llmsExists;
+  if (noLlms) {
+    codes.push({
+      code: 'T-INDEX',
+      label: '可发现性不足',
+      detail: '/llms.txt 缺失，AI 系统无法获取站点摘要和关键路径。',
+      fix: '上线 /llms.txt，按 P0 行动项中的模板填写。',
+    });
+  }
+
+  // C-MATCH: structure score < 40% of max (12/30)
+  if (d.structure.raw < 12) {
+    codes.push({
+      code: 'C-MATCH',
+      label: '内容匹配失败',
+      detail: `内容可摘取性得分 ${d.structure.raw}/${d.structure.max}（低于阈值 12），缺少结构化 FAQ / 标题层级 / 可引用段落。`,
+      fix: '补 FAQPage schema，确保 H1-H2-H3 层级完整，文章开头放可独立引用的摘要段。',
+    });
+  }
+
+  // C-ANSWER: no FAQ schema and low question count
+  if (d.structure.breakdown && d.structure.breakdown.faqScore === 0 && d.structure.breakdown.headingScore < 4) {
+    codes.push({
+      code: 'C-ANSWER',
+      label: '答案定向内容不足',
+      detail: '页面无 FAQPage schema 且标题层级不完整，AI 系统难以提取"问题-答案"对。',
+      fix: '添加 FAQPage JSON-LD，或在文章中增加明确的 Q&A 段落结构。',
+    });
+  }
+
+  // A-AUTH: authority < 32% of max (8/25)
+  if (d.authority.raw < 8) {
+    codes.push({
+      code: 'A-AUTH',
+      label: '权威信号缺失',
+      detail: `实体与权威信号得分 ${d.authority.raw}/${d.authority.max}（低于阈值 8），AI 系统无法建立品牌实体可信度。`,
+      fix: '首页添加 Organization JSON-LD（含 sameAs 指向社交媒体账号），文章页补作者署名和发布日期。',
+    });
+  }
+
+  // A-FRESH: no publish or modified date
+  if (d.authority.breakdown && d.authority.breakdown.freshnessScore === 0) {
+    codes.push({
+      code: 'A-FRESH',
+      label: '内容时效性不明',
+      detail: '文章页缺少 datePublished / dateModified，AI 系统无法判断内容是否过期，倾向选择有明确日期的来源。',
+      fix: '在 BlogPosting JSON-LD 中补 datePublished 和 dateModified 字段，HTML 中也添加 <time> 元素。',
+    });
+  }
+
+  // P-ABSENCE: presence unknown
+  if (d.presence.unknown) {
+    codes.push({
+      code: 'P-ABSENCE',
+      label: '第三方存在感未知',
+      detail: '无法确认品牌在知乎、Wikipedia、G2、媒体报道中的存在，AI 系统无法从第三方来源建立实体认知。',
+      fix: '参见 P2 行动项，逐步建立知乎问答、目录收录、行业媒体报道的存在。',
+    });
+  }
+
+  return codes;
+}
+
 function buildActions(scoreData, schemaResult, url) {
   const d = scoreData.dimensions;
   const m = schemaResult?.meta || {};
@@ -284,6 +365,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
 
   const { p0, p1, p2 } = buildActions(scoreData, schemaResult, url);
   const queries = buildMonitoringQueries(context);
+  const failureCodes = diagnoseFailureCodes(scoreData, robotsResult);
 
   const presenceDisplay = d.presence.raw !== null
     ? `${d.presence.raw}/${d.presence.max}`
@@ -352,6 +434,18 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     articleEvidenceLine,
     '',
   ];
+
+  // Failure taxonomy
+  if (failureCodes.length > 0) {
+    lines.push('### 引用失败诊断', '');
+    lines.push('基于检测结果自动识别的引用障碍：', '');
+    for (const fc of failureCodes) {
+      lines.push(`**[${fc.code}] ${fc.label}**`);
+      lines.push(`- 原因：${fc.detail}`);
+      lines.push(`- 修复：${fc.fix}`);
+      lines.push('');
+    }
+  }
 
   // P0
   if (p0.length > 0) {
