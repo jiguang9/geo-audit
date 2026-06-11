@@ -49,19 +49,19 @@ test('renderReport — contains brand name and date', () => {
   assert.ok(report.match(/\d{4}-\d{2}-\d{2}/), 'Should contain date');
 });
 
-test('renderReport — contains GEO Score heading', () => {
+test('renderReport — contains GEO score section', () => {
   const score = makeScore();
   const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
-  assert.ok(report.includes('GEO Score'), 'Should contain GEO Score');
+  assert.ok(report.includes('GEO 得分'), 'Should contain GEO 得分 section');
 });
 
 test('renderReport — contains all 4 dimension rows', () => {
   const score = makeScore();
   const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
-  assert.ok(report.includes('Structure extractability'));
-  assert.ok(report.includes('Authority'));
-  assert.ok(report.includes('Third-party presence'));
-  assert.ok(report.includes('Technical accessibility'));
+  assert.ok(report.includes('技术可访问性'));
+  assert.ok(report.includes('内容可摘取性'));
+  assert.ok(report.includes('实体与权威信号'));
+  assert.ok(report.includes('第三方存在感'));
 });
 
 test('renderReport — unknown presence dimension is flagged', () => {
@@ -70,10 +70,10 @@ test('renderReport — unknown presence dimension is flagged', () => {
   assert.ok(report.includes('unknown'), 'Should flag unknown presence');
 });
 
-test('renderReport — contains priority action list', () => {
+test('renderReport — contains priority action sections', () => {
   const score = makeScore();
   const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
-  assert.ok(report.includes('Priority Action List'), 'Should have action list');
+  assert.ok(report.includes('P0') || report.includes('P1') || report.includes('P2'), 'Should have priority action sections');
 });
 
 test('renderReport — contains robots.txt section', () => {

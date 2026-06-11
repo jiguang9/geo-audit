@@ -47,6 +47,9 @@ The skill collects context, runs automated checks, and outputs a scored report.
 ### As a CLI tool
 
 ```bash
+# Full audit — HTML dashboard (recommended)
+node tools/audit.js https://example.com --html --brand "Brand"
+
 # Full audit — Markdown report
 node tools/audit.js https://example.com
 
@@ -54,6 +57,7 @@ node tools/audit.js https://example.com
 node tools/audit.js https://example.com --json
 
 # Individual checks
+node tools/sitemap-checker.js https://example.com
 node tools/robots-checker.js https://example.com
 node tools/llms-txt-checker.js https://example.com
 node tools/schema-inspector.js https://example.com

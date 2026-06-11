@@ -38,24 +38,37 @@ After the audit is complete and results are shown, you may briefly note (in one 
 
 ## Phase 1 — Automated Technical Checks
 
-Run all checks at once with the main entry. Always use `--html` to generate the visual report.
+Run four commands in sequence. Each takes a few seconds.
+
+**Step 1 — Sitemap overview** (understand the site's content scope)
 
 ```bash
-# Minimal — just a URL (works immediately, no context needed)
-node tools/audit.js <url> --html
-
-# With brand name (use when brand is known)
-node tools/audit.js <url> --html --brand "品牌名"
-
-# With full context
-node tools/audit.js <url> --html --brand "深信服" --industry SaaS --market China
-
-# JSON for programmatic use
-node tools/audit.js <url> --json
+node tools/sitemap-checker.js <url>
 ```
 
-Pass `--brand` only when you already know the brand name — never ask for it before running.
-After running, tell the user the HTML report path so they can open it in a browser.
+This returns total page count, blog post count, last update date, and 2–3 sample URLs to spot-check.
+
+**Step 2 — Full homepage audit** (always include `--html` for the visual dashboard)
+
+```bash
+node tools/audit.js <url> --html --brand "品牌名"
+# or without brand if not known:
+node tools/audit.js <url> --html
+```
+
+Pass `--brand` only when already known. After running, share the HTML file path with the user.
+
+**Step 3 — Spot-check 2–3 key pages** using sample URLs from Step 1
+
+Pick one from each category (about/team page, a blog post, a product/tool page):
+
+```bash
+node tools/schema-inspector.js <url>/about
+node tools/schema-inspector.js <url>/blog/any-representative-post
+node tools/schema-inspector.js <url>/product-or-tool-page
+```
+
+Record what schema types were found (or missing) on each page — these go in the "关键证据" section.
 
 ## Phase 2 — Three-Pillar Evaluation
 
@@ -112,31 +125,88 @@ Provide a monitoring plan using `references/monitor.md`. Include:
 
 ## Output Format
 
+Write the report directly in the conversation — do not reference the tool's stdout table. The HTML file is the visual dashboard; the conversation response is the full analysis.
+
 ```
-## GEO Diagnostic Report — {Brand} ({Date})
-> {URL}
+## GEO 诊断报告 — {Brand}（{Date}）
+**目标网站**: {URL}
+**行业/市场**: {industry / market if known}
+**诊断方法**: robots.txt、llms.txt、Schema、内容结构（首页自动检测）+ sitemap 概览 + {N} 个页面抽查
 
-### GEO Score: XX/100  Level X
-| Dimension           | Score  | Status |
-|---------------------|--------|--------|
-| Structure           | XX/30  | 🔴/🟡/🟢 |
-| Authority           | XX/25  | 🔴/🟡/🟢 |
-| Third-party presence| XX/25  | 🔴/🟡/🟢 |
-| Technical access    | XX/20  | 🔴/🟡/🟢 |
+### 总体结论
 
-### Technical Checks
-(robots.txt / llms.txt / Schema output)
+[2–3 句话：当前 GEO 状态 + 最大短板 + 优先方向。不要只罗列发现，要给出判断。
+例："站内内容主题集中，但首页缺少机器可读的实体信号（Organization schema、canonical），
+文章页无作者/日期 schema，使 AI 系统难以判断权威性，这是当前被引用率低的核心原因。"]
 
-### Key Findings
-✅ ...
-❌ ...
-⚠️ ...
+### GEO 得分
 
-### Priority Action List
-1. [This week] ...
-2. [This month] ...
-3. [Long term] ...
+| 维度 | 得分 | 判断 |
+|------|-----:|------|
+| 技术可访问性 | XX/20 | [一句话] |
+| 内容可摘取性 | XX/30 | [一句话] |
+| 实体与权威信号 | XX/25 | [一句话] |
+| 第三方存在感 | XX/25 或 unknown | [一句话] |
+| **总分** | **XX/100** | **Level X：[描述]** |
 
-### Platform-Specific Recommendations
-(only for selected platforms)
+### 关键证据
+
+列出每个检查点的具体发现（有 URL 就带 URL）：
+
+- `robots.txt` — [是否允许主流 AI 爬虫]
+- `/llms.txt` — [存在/404/内容质量]
+- `/sitemap.xml` — [共 N 个页面，M 篇博客，最近更新 YYYY-MM-DD]
+- `/`（首页）— [发现哪些 schema，缺哪些，是否有 canonical]
+- `/{about-page}` — [抽查结果：有无 Person/Organization schema]
+- `/{blog-post}` — [抽查结果：有无 BlogPosting/Article、作者、日期]
+- `/{tool-or-product-page}` — [抽查结果：有无 WebApplication/Product schema]
+
+### P0：本周做
+
+[最高优先级，1–3 项，每项必须包含可直接复制的代码示例]
+
+**1. 上线 /llms.txt**（如果缺失）
+
+给出完整的 llms.txt 内容模板，填入该站点的实际信息：
+```txt
+# {domain}
+
+> {一句话站点定位}
+
+## Key pages
+- Home: {url}/
+- {页面名}: {url}/{path}
+...
+
+## Core topics
+- {主题 1}
+- {主题 2}
+```
+
+**2. 首页补 canonical + Organization JSON-LD**（如果缺失）
+
+给出完整代码，用实际品牌名/URL/描述填充占位符。
+
+**3. FAQ / FAQPage JSON-LD**（如果首页有 FAQ 文案但无 schema）
+
+给出完整代码示例。
+
+### P1：本月做
+
+[中优先级，2–4 项，可以只给指导方向，不强制要代码]
+
+**4. 博客模板补 BlogPosting JSON-LD + 作者 + 日期**
+**5. 每篇核心文章加可引用摘要（40–80 字，开头给结论）**
+**6. 建立核心主题 Hub 页**
+
+### P2：持续做
+
+**7. 建立第三方存在感**（知乎、GitHub、小红书/公众号、工具目录、Wikipedia/百度百科）
+**8. 文章增加数据与外部引用**
+
+### 推荐监控
+
+每月人工测试以下查询，记录 ChatGPT、Perplexity、Google AI Overviews、DeepSeek、豆包是否引用本站：
+
+- {根据站点主题生成 7–10 个具体查询，不要写通用占位符，要是真实的搜索问题}
 ```
