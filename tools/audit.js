@@ -30,7 +30,7 @@ function parseArgs(argv) {
   }
 
   // Parse named flag-value pairs first, tracking which indices are consumed values
-  const NAMED_FLAG_RE = /^--(brand|industry|market|platforms|queries|competitors)$/;
+  const NAMED_FLAG_RE = /^--(brand|industry|market|platforms|queries|competitors|lang)$/;
   const namedFlags = {};
   const valueIndices = new Set();
   for (let i = 0; i < args.length; i++) {
@@ -44,6 +44,12 @@ function parseArgs(argv) {
 
   // URL: first non-flag, non-flag-value positional argument
   const url = args.find((a, i) => !a.startsWith('--') && !valueIndices.has(i));
+
+  if (namedFlags.lang && !['zh', 'en'].includes(namedFlags.lang.toLowerCase())) {
+    process.stderr.write(`Error: --lang must be "zh" or "en" (got "${namedFlags.lang}").\n`);
+    process.exit(1);
+  }
+  if (namedFlags.lang) namedFlags.lang = namedFlags.lang.toLowerCase();
 
   const json = args.includes('--json');
   const format = json ? 'json' : 'markdown';
@@ -175,6 +181,7 @@ async function main() {
       '  --brand <name>       Brand name shown in the report',
       '  --industry <type>    SaaS / ecommerce / media / B2B / local',
       '  --market <market>    China / US / global',
+      '  --lang <zh|en>       Report language (default: zh)',
       '',
       'Examples:',
       '  node tools/audit.js https://example.com --brand "Acme"',

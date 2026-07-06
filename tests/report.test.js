@@ -229,3 +229,51 @@ test('renderReport — presence plan search links shown when presence unknown', 
   assert.ok(report.includes('知乎'), 'Should include Zhihu search link');
   assert.ok(report.includes('G2'), 'Should include G2 search link');
 });
+
+// ── i18n tests ───────────────────────────────────────────────────────────────
+
+test('renderReport — lang:en produces English section headers', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context, lang: 'en' });
+  assert.ok(report.includes('## GEO Audit Report'), 'English title');
+  assert.ok(report.includes('### Overall Assessment'), 'English conclusion header');
+  assert.ok(report.includes('### GEO Score'), 'English score header');
+  assert.ok(report.includes('Technical accessibility'), 'English dimension name');
+  assert.ok(!report.includes('### 总体结论'), 'No Chinese headers in English report');
+});
+
+test('renderReport — context.lang works as fallback for lang option', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context: { ...context, lang: 'en' } });
+  assert.ok(report.includes('## GEO Audit Report'), 'English via context.lang');
+});
+
+test('renderReport — default remains Chinese', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(report.includes('GEO 诊断报告'), 'Chinese title by default');
+  assert.ok(report.includes('### 总体结论'), 'Chinese headers by default');
+});
+
+test('renderReport — English failure codes when lang:en', () => {
+  const score = makeScore({});
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context, lang: 'en' });
+  assert.ok(report.includes('P-ABSENCE'), 'Failure code present');
+  assert.ok(report.includes('Third-party presence unknown'), 'English failure label');
+  assert.ok(report.includes('- Cause:'), 'English cause label');
+});
+
+test('report-strings — zh and en locales expose identical shapes', () => {
+  const STRINGS = require('../tools/report-strings.js');
+  function shapeOf(obj, path = '') {
+    const keys = [];
+    for (const k of Object.keys(obj).sort()) {
+      const v = obj[k];
+      const p = path ? `${path}.${k}` : k;
+      keys.push(`${p}:${typeof v}`);
+      if (v && typeof v === 'object' && !Array.isArray(v)) keys.push(...shapeOf(v, p));
+    }
+    return keys;
+  }
+  assert.deepEqual(shapeOf(STRINGS.zh), shapeOf(STRINGS.en), 'zh and en must have the same keys and value types');
+});
