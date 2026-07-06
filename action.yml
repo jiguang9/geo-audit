@@ -1,0 +1,38 @@
+name: 'GEO Audit'
+description: >-
+  Audit AI search visibility (Generative Engine Optimization) — robots.txt AI
+  crawler access, llms.txt, Schema markup, content extractability — and
+  optionally fail the job below a score threshold. Zero dependencies.
+author: 'jiguang9'
+branding:
+  icon: 'search'
+  color: 'blue'
+
+inputs:
+  url:
+    description: 'Publicly accessible URL to audit'
+    required: true
+  brand:
+    description: 'Brand name shown in the report'
+    required: false
+    default: ''
+  min-score:
+    description: 'Minimum normalized GEO score (0-100). 0 = report only, never fail.'
+    required: false
+    default: '0'
+  lang:
+    description: 'Report language: en or zh'
+    required: false
+    default: 'en'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Run GEO audit
+      shell: bash
+      env:
+        GEO_URL: ${{ inputs.url }}
+        GEO_BRAND: ${{ inputs.brand }}
+        GEO_MIN_SCORE: ${{ inputs.min-score }}
+        GEO_LANG: ${{ inputs.lang }}
+      run: node "${{ github.action_path }}/tools/ci-check.js"
