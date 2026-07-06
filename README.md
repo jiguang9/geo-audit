@@ -8,6 +8,18 @@ ERNIE Bot (文心一言), Kimi, Qwen (通义千问), and more.
 
 Traditional SEO gets you ranked. GEO gets you **cited**.
 
+## Why this one?
+
+| Capability | geo-audit | Typical GEO/SEO skills |
+|-----------|-----------|------------------------|
+| China AI platforms (DeepSeek, 豆包, 文心, Kimi, 通义) + Bytespider/baiduspider crawler rules + 知乎/百度百科 presence | ✅ First-class | ❌ Western platforms only |
+| Evidence-based scoring — presence scored `unknown` (N/75), never fake-zeroed; per-dimension confidence (●/◐/○) | ✅ | Rarely |
+| Citation failure taxonomy (T-ACCESS / T-INDEX / C-MATCH / C-ANSWER / A-AUTH / A-FRESH / P-ABSENCE) auto-diagnosed with per-code fixes | ✅ | ❌ |
+| Audit → **fix** closure: pre-filled llms.txt generator, JSON-LD templates written into your repo by the agent | ✅ | Audit-only |
+| Score history + trend diff between runs | ✅ `--save` | Paid SaaS |
+| CI gate via GitHub Action | ✅ Zero-dep | Rare |
+| Bilingual reports (中文 / English) | ✅ `--lang` | Single language |
+
 ## Install
 
 ```bash
@@ -51,11 +63,20 @@ actionable recommendations.
 # Full audit — Markdown report (stdout)
 node tools/audit.js https://example.com --brand "Brand"
 
+# English report
+node tools/audit.js https://example.com --brand "Brand" --lang en
+
+# Save a score snapshot; future runs auto-show a trend table
+node tools/audit.js https://example.com --save
+
 # Flags can appear in any order
 node tools/audit.js --brand "Brand" --industry SaaS https://example.com
 
 # JSON output for scripting / agent processing
 node tools/audit.js https://example.com --json
+
+# Generate a pre-filled llms.txt from your live site (title, description, key pages)
+node tools/llms-txt-generator.js https://example.com > llms.txt
 
 # Individual checks
 node tools/sitemap-checker.js https://example.com
@@ -72,6 +93,41 @@ node tools/content-structure.js https://example.com
 | `--brand` | `--brand "Acme"` | Brand name in report header |
 | `--industry` | `--industry SaaS` | SaaS / ecommerce / media / B2B / local |
 | `--market` | `--market China` | China / US / global |
+| `--lang` | `--lang en` | Report language: `zh` (default) or `en` |
+| `--save` | `--save` | Save score snapshot to `.agents/geo-audit-history/` |
+
+### Score history & trends
+
+Run with `--save` to persist a snapshot. Every later audit of the same domain
+automatically shows a **Score Trend** table (previous vs. current, with per-
+dimension deltas). Totals are normalized to 0-100 so runs before and after
+presence evidence stay comparable. Commit `.agents/geo-audit-history/` to
+track GEO progress in git.
+
+### GitHub Action (CI gate)
+
+Fail a PR when the GEO score regresses:
+
+```yaml
+# .github/workflows/geo-audit.yml
+name: GEO Audit
+on:
+  schedule: [{ cron: '0 6 * * 1' }]   # weekly
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: jiguang9/geo-audit@main
+        with:
+          url: https://example.com
+          brand: 'Acme'
+          min-score: 60        # 0 = report-only
+          lang: en
+```
+
+The full Markdown report lands in the job summary; the job fails if the
+normalized score drops below `min-score`.
 
 ## What the Report Covers
 

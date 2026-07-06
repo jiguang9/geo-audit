@@ -25,6 +25,9 @@ Run the full audit first, then spot-check individual pages:
 # Full audit (Markdown report to stdout)
 node tools/audit.js https://example.com --brand "Brand Name"
 
+# Generate a pre-filled llms.txt (title/description/pages from the live site)
+node tools/llms-txt-generator.js https://example.com
+
 # Individual checks
 node tools/robots-checker.js https://example.com
 node tools/llms-txt-checker.js https://example.com
@@ -33,8 +36,10 @@ node tools/schema-inspector.js https://example.com/about
 node tools/content-structure.js https://example.com/blog/post
 ```
 
-Flags (`--brand`, `--industry`, `--market`) can appear in any order relative to the URL.
-The `--json` flag outputs structured JSON instead of Markdown.
+Flags (`--brand`, `--industry`, `--market`, `--lang zh|en`) can appear in any
+order relative to the URL. `--json` outputs structured JSON. `--save` writes a
+score snapshot to `.agents/geo-audit-history/`; later runs of the same domain
+automatically render a Score Trend section.
 
 ## Report Sections
 

@@ -1,6 +1,6 @@
 {
   "name": "@jiguang9/geo-audit",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "GEO (Generative Engine Optimization) diagnostic skill — audit AI search visibility across ChatGPT, Perplexity, Claude, DeepSeek, Doubao and more",
   "bin": {
     "geo-audit": "./tools/audit.js"

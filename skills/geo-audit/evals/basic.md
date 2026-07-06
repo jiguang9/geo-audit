@@ -12,10 +12,14 @@ regression benchmarks when updating the skill.
 
 **Expected behaviour:**
 1. Skill triggers (trigger phrase: "GEO audit")
-2. No `.agents/geo-audit-context.md` found → collects URL, brand, industry, platforms, market, queries, competitors
-3. Runs all four CLI tools
-4. Outputs structured report with GEO Score, four dimension rows, technical checks, findings, and action list
-5. Presence dimension marked as `unknown` (no evidence provided)
+2. Runs the audit immediately — does NOT ask for brand, industry, platforms,
+   queries, or competitors first (URL is the only required input)
+3. Reads `.agents/geo-audit-context.md` if present; otherwise proceeds without it
+4. Runs the CLI tools (sitemap overview → full audit → spot-checks)
+5. Outputs structured report with GEO Score, four dimension rows, technical
+   checks, failure diagnosis codes, and prioritised action list
+6. Presence dimension marked as `unknown` (no evidence provided); may note in
+   one sentence that adding context improves presence scoring
 
 **Must NOT:**
 - Attempt to scrape Zhihu, Wikipedia, or G2

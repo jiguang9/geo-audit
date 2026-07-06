@@ -7,7 +7,7 @@ description: >-
   (文心一言), Kimi, and Qwen (通义千问). Triggers on: GEO audit, AI SEO, AI
   visibility check, AI citation analysis, LLM SEO, AI search optimization,
   生成式引擎优化, AI 搜索诊断, 被 AI 引用, why isn't AI citing my content.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # geo-audit
@@ -56,7 +56,10 @@ node tools/audit.js <url> --brand "品牌名"
 node tools/audit.js <url>
 ```
 
-Pass `--brand` only when already known.
+Pass `--brand` only when already known. Match the report language to the
+conversation: add `--lang en` when the user is writing in English (default is
+Chinese). For repeat audits of the same site, add `--save` so the report shows
+a Score Trend section comparing against the previous run.
 
 **Step 3 — Spot-check 2–3 key pages** using sample URLs from Step 1
 
