@@ -78,6 +78,11 @@ async function checkSitemap(baseUrl) {
       pageCount: pageUrls.length - blogUrls.length,
       lastmod,
       sampleUrls,
+      categories: {
+        about: aboutUrls.slice(0, 3),
+        tools: toolUrls.slice(0, 5),
+        blog: blogUrls.slice(0, 5),
+      },
     };
   }
 

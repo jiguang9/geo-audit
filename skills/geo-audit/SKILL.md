@@ -129,6 +129,30 @@ After scoring, provide targeted recommendations for the user's selected AI platf
 
 If the user specified target platforms in their message or context file, focus recommendations on those. Otherwise, default to the top global platforms (ChatGPT, Perplexity, Google AI Overviews) plus the top China platforms (DeepSeek, Doubao, ERNIE Bot) when market context suggests China.
 
+## Phase 4b — Apply Fixes (audit → fix closure)
+
+If the audited site's source code is in the current repository (check for the
+domain in config files, `package.json` homepage, CNAME, or ask the user),
+**offer to implement the P0 fixes directly** instead of only listing them:
+
+1. **llms.txt** — generate a pre-filled version and write it to the site's
+   static/public directory:
+   ```bash
+   node tools/llms-txt-generator.js <url>
+   ```
+   Review the `[TODO]` markers with the user before writing.
+2. **JSON-LD** — insert the Organization / BlogPosting schema snippets from the
+   P0 actions into the site's layout or template files (use the templates in
+   `tools/templates/` as a base, filled with real site data from the audit).
+3. **canonical / meta** — add missing tags to the HTML head template.
+
+This closes the loop: diagnose → fix in one session. Never write into the
+skill installation directory; only write into the user's own project after
+confirming file paths with them.
+
+If the site source is **not** in the current repository, output the generated
+llms.txt content and code snippets in the conversation for the user to apply.
+
 ## Phase 5 — Monitoring
 
 Provide a monitoring plan using `references/monitor.md`. Include:
