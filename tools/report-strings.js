@@ -163,6 +163,13 @@ const zh = {
     defaultBrand: '[品牌]',
   },
 
+  trend: {
+    header: date => `### 得分趋势（对比 ${date}）`,
+    tableHead: '| 维度 | 上次 | 本次 | 变化 |',
+    totalRow: '总分（归一化 0-100）',
+    unknown: 'unknown',
+  },
+
   report: {
     title: (brand, date) => `## GEO 诊断报告 — ${brand}（${date}）`,
     targetSite: '**目标网站**',
@@ -348,6 +355,13 @@ const en = {
     },
     fallback: () => ['how to do [core keyword]', '[core keyword] best practices', 'recommended [category] tools or resources'],
     defaultBrand: '[Brand]',
+  },
+
+  trend: {
+    header: date => `### Score Trend (vs ${date})`,
+    tableHead: '| Dimension | Previous | Current | Change |',
+    totalRow: 'Total (normalized 0-100)',
+    unknown: 'unknown',
   },
 
   report: {

@@ -18,7 +18,8 @@ const { checkContentStructure } = require('./content-structure.js');
 const { checkSitemap } = require('./sitemap-checker.js');
 const { computeGeoScore } = require('./score.js');
 const { renderReport } = require('./report.js');
-const { normalizeUrl, isPublicUrl } = require('./shared/url.js');
+const { saveHistory, loadLatestHistory } = require('./history.js');
+const { normalizeUrl, isPublicUrl, getHostname } = require('./shared/url.js');
 const fs = require('fs');
 const path = require('path');
 
@@ -53,8 +54,9 @@ function parseArgs(argv) {
 
   const json = args.includes('--json');
   const format = json ? 'json' : 'markdown';
+  const save = args.includes('--save');
 
-  return { url, format, namedFlags };
+  return { url, format, namedFlags, save };
 }
 
 function loadContext(startDir) {
@@ -166,7 +168,7 @@ async function runAudit(siteUrl, context) {
 }
 
 async function main() {
-  const { url, format, namedFlags } = parseArgs(process.argv);
+  const { url, format, namedFlags, save } = parseArgs(process.argv);
 
   if (!url) {
     console.error([
@@ -183,8 +185,12 @@ async function main() {
       '  --market <market>    China / US / global',
       '  --lang <zh|en>       Report language (default: zh)',
       '',
+      'Other flags:',
+      '  --save               Save a score snapshot to .agents/geo-audit-history/',
+      '                       (future runs auto-show a score trend section)',
+      '',
       'Examples:',
-      '  node tools/audit.js https://example.com --brand "Acme"',
+      '  node tools/audit.js https://example.com --brand "Acme" --save',
     ].join('\n'));
     process.exit(1);
   }
@@ -204,11 +210,21 @@ async function main() {
   try {
     const result = await runAudit(url, context);
 
+    // History: load the latest snapshot for trend display, then save if asked
+    let previousAudit = null;
+    const domain = getHostname(result.url);
+    try { previousAudit = loadLatestHistory(domain, process.cwd()); } catch (_) {}
+
     if (format === 'json') {
-      console.log(JSON.stringify(result, null, 2));
+      console.log(JSON.stringify({ ...result, previousAudit }, null, 2));
     } else {
-      const report = renderReport(result.scoreData, { ...result, url: result.url });
+      const report = renderReport(result.scoreData, { ...result, url: result.url, previousAudit });
       console.log(report);
+    }
+
+    if (save) {
+      const file = saveHistory(result, process.cwd(), domain);
+      process.stderr.write(`Saved score snapshot: ${file}\n`);
     }
   } catch (err) {
     console.error('Audit failed:', err.message);

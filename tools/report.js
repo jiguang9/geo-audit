@@ -1,6 +1,41 @@
 'use strict';
 
 const STRINGS = require('./report-strings.js');
+const { computeTrend } = require('./history.js');
+
+function deltaLabel(delta) {
+  if (delta === null || delta === undefined) return '—';
+  if (delta > 0) return `+${delta} ↑`;
+  if (delta < 0) return `${delta} ↓`;
+  return '±0';
+}
+
+function renderTrend(previousAudit, scoreData, L) {
+  const trend = computeTrend(previousAudit, scoreData);
+  if (!trend) return null;
+  const T = L.trend;
+  const R = L.report;
+
+  function dimRow(name, t) {
+    if (!t) return null;
+    const prev = t.prev === null ? T.unknown : `${t.prev}/${t.max}`;
+    const curr = t.curr === null ? T.unknown : `${t.curr}/${t.max}`;
+    return `| ${name} | ${prev} | ${curr} | ${deltaLabel(t.delta)} |`;
+  }
+
+  const lines = [
+    T.header(trend.prevDate),
+    '',
+    T.tableHead,
+    '|------|-----:|-----:|:----:|',
+    dimRow(R.dims.technical, trend.dims.technical),
+    dimRow(R.dims.structure, trend.dims.structure),
+    dimRow(R.dims.authority, trend.dims.authority),
+    dimRow(R.dims.presence, trend.dims.presence),
+    `| **${T.totalRow}** | ${trend.total.prevNormalized ?? '—'} | ${trend.total.currNormalized ?? '—'} | **${deltaLabel(trend.total.deltaNormalized)}** |`,
+  ].filter(l => l !== null);
+  return lines.join('\n');
+}
 
 function confidenceSymbol(c) {
   if (c === 'high') return '●';
@@ -364,7 +399,7 @@ function buildMonitoringQueries(context, L) {
   return [...base, ...extra];
 }
 
-function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSchemaResult, articleUrl, context, url: auditUrl, lang }) {
+function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSchemaResult, articleUrl, context, url: auditUrl, lang, previousAudit }) {
   const locale = (lang || context?.lang || 'zh').toLowerCase();
   const L = STRINGS[locale] || STRINGS.zh;
   const R = L.report;
@@ -440,6 +475,12 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     `| ${R.dims.presence} | ${presenceDisplay} | ${confidenceSymbol(d.presence.confidence)} | ${statusIcon(d.presence.raw, d.presence.max)} |`,
     `| **${R.totalRow}** | **${scoreData.total}/${scoreData.totalMax}** | | **${L.levelLabels[scoreData.level] || 'Unknown'}** |`,
     '',
+  ];
+
+  const trendSection = renderTrend(previousAudit, scoreData, L);
+  if (trendSection) lines.push(trendSection, '');
+
+  lines.push(
     R.evidenceHeader,
     '',
     renderRobots(robotsResult, L),
@@ -451,7 +492,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     articleEvidenceLine ? '' : null,
     articleEvidenceLine,
     '',
-  ];
+  );
 
   const contentEvidence = renderContentEvidence(contentResult, L);
   if (contentEvidence) lines.push(contentEvidence, '');

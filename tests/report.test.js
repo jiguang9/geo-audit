@@ -263,6 +263,33 @@ test('renderReport — English failure codes when lang:en', () => {
   assert.ok(report.includes('- Cause:'), 'English cause label');
 });
 
+// ── Trend section tests ──────────────────────────────────────────────────────
+
+test('renderReport — trend section shown when previousAudit provided', () => {
+  const score = makeScore();
+  const previousAudit = {
+    date: '2026-06-01',
+    total: Math.max(0, score.total - 10),
+    totalMax: score.totalMax,
+    dimensions: {
+      structure: { raw: Math.max(0, score.dimensions.structure.raw - 5), max: 30 },
+      authority: { raw: score.dimensions.authority.raw, max: 25 },
+      presence:  { raw: score.dimensions.presence.raw, max: 25 },
+      technical: { raw: score.dimensions.technical.raw, max: 20 },
+    },
+  };
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context, previousAudit });
+  assert.ok(report.includes('得分趋势'), 'Trend section header present');
+  assert.ok(report.includes('2026-06-01'), 'Previous audit date shown');
+  assert.ok(report.includes('↑'), 'Improvement arrow shown');
+});
+
+test('renderReport — no trend section without previousAudit', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(!report.includes('得分趋势'), 'No trend section without history');
+});
+
 test('report-strings — zh and en locales expose identical shapes', () => {
   const STRINGS = require('../tools/report-strings.js');
   function shapeOf(obj, path = '') {
