@@ -112,6 +112,30 @@ function renderContentEvidence(contentResult, L) {
   return lines.length > 0 ? lines.join('\n') : null;
 }
 
+function renderVerdict(scoreData, V) {
+  const state = V[scoreData.verdict] || V.fix;
+  const desc = scoreData.verdict === 'block' ? V.blockDesc
+    : scoreData.verdict === 'ship' ? V.shipDesc
+    : V.fixDesc;
+
+  let badge = `${V.header}: ${state.icon} ${state.label} — ${desc}`;
+  if (scoreData.capped) {
+    badge += ' ' + V.cappedNote(scoreData.rawTotal, scoreData.total);
+  }
+
+  const out = [badge];
+  if (scoreData.vetoes && scoreData.vetoes.length > 0) {
+    out.push('', V.reasonsHeader);
+    for (const veto of scoreData.vetoes) {
+      const reason = V.reasons[veto.code];
+      if (!reason) continue;
+      const names = (veto.blockedCrawlers || []).join(', ');
+      out.push(`- **[${veto.code}]** ${reason(names)}`);
+    }
+  }
+  return out.join('\n');
+}
+
 function diagnoseFailureCodes(scoreData, robotsResult, sitemapResult, L) {
   const d = scoreData.dimensions;
   const F = L.failureCodes;
@@ -462,6 +486,8 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     contextLine ? `${R.industryMarket}: ${contextLine}` : '',
     '',
     R.conclusionHeader,
+    '',
+    renderVerdict(scoreData, R.verdict),
     '',
     narrative,
     '',

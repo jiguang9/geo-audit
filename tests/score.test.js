@@ -2,7 +2,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { computeGeoScore, scoreStructure, scoreAuthority, scorePresence, scoreTechnical } = require('../tools/score.js');
+const { computeGeoScore, computeVetoes, scoreStructure, scoreAuthority, scorePresence, scoreTechnical } = require('../tools/score.js');
 
 // Fixtures
 const goodSchema = {
@@ -47,6 +47,18 @@ const blockedRobots = {
     { name: 'GPTBot', result: 'blocked' },
     { name: 'ClaudeBot', result: 'blocked' },
     { name: 'PerplexityBot', result: 'blocked' },
+  ],
+};
+
+// Like blockedRobots but with the citationRisk field the real robots-checker
+// emits — a high-risk block is what triggers the V-ACCESS veto.
+const vetoRobots = {
+  accessible: true,
+  httpStatus: 200,
+  crawlers: [
+    { name: 'GPTBot', result: 'blocked', citationRisk: 'high' },
+    { name: 'ClaudeBot', result: 'blocked', citationRisk: 'high' },
+    { name: 'PerplexityBot', result: 'blocked', citationRisk: 'high' },
   ],
 };
 
@@ -214,4 +226,91 @@ test('computeGeoScore — totalMax is 100 when presence known', () => {
     presenceEvidence: evidence,
   });
   assert.equal(result.totalMax, 100, 'Should use /100 denominator when presence known');
+});
+
+// Veto gate + verdict tests
+test('computeVetoes — high-risk blocked crawler triggers V-ACCESS', () => {
+  const v = computeVetoes(vetoRobots, goodSchema);
+  assert.equal(v.length, 1);
+  assert.equal(v[0].code, 'V-ACCESS');
+  assert.ok(v[0].blockedCrawlers.includes('GPTBot'));
+});
+
+test('computeVetoes — unreachable page triggers V-ACCESS', () => {
+  const v = computeVetoes(goodRobots, { error: 'HTTP 500' });
+  assert.equal(v.length, 1);
+  assert.equal(v[0].code, 'V-ACCESS');
+  assert.equal(v[0].pageUnreachable, true);
+});
+
+test('computeVetoes — healthy site has no vetoes', () => {
+  assert.equal(computeVetoes(goodRobots, goodSchema).length, 0);
+});
+
+test('computeGeoScore — veto caps an otherwise strong page and blocks it', () => {
+  const evidence = { hasWikipedia: true, hasZhihu: true, reviewPlatformCount: 2, mediaMentionCount: 2, socialPlatformCount: 3 };
+  const result = computeGeoScore({
+    robotsResult: vetoRobots,
+    llmsResult: goodLlms,
+    schemaResult: goodSchema,
+    contentResult: goodContent,
+    presenceEvidence: evidence,
+  });
+  assert.equal(result.verdict, 'block');
+  assert.ok(result.vetoes.some(v => v.code === 'V-ACCESS'));
+  assert.equal(result.capped, true);
+  assert.ok(result.rawTotal > result.total, 'raw score should exceed capped total');
+  assert.ok(result.level <= 2, `veto should cap level at 2, got ${result.level}`);
+  const normalised = Math.round((result.total / result.totalMax) * 100);
+  assert.ok(normalised <= 40, `capped normalised should be <= 40, got ${normalised}`);
+});
+
+test('computeGeoScore — unreachable page yields block verdict', () => {
+  const result = computeGeoScore({
+    robotsResult: goodRobots,
+    llmsResult: goodLlms,
+    schemaResult: { error: 'HTTP 503' },
+    contentResult: null,
+    presenceEvidence: {},
+  });
+  assert.equal(result.verdict, 'block');
+});
+
+test('computeGeoScore — strong site with no veto ships', () => {
+  const evidence = { hasWikipedia: true, hasZhihu: true, reviewPlatformCount: 2, mediaMentionCount: 2, socialPlatformCount: 3 };
+  const result = computeGeoScore({
+    robotsResult: goodRobots,
+    llmsResult: goodLlms,
+    schemaResult: goodSchema,
+    contentResult: goodContent,
+    presenceEvidence: evidence,
+  });
+  assert.equal(result.verdict, 'ship');
+  assert.equal(result.capped, false);
+  assert.equal(result.vetoes.length, 0);
+});
+
+test('computeGeoScore — reachable but weak site needs fixing', () => {
+  const result = computeGeoScore({
+    robotsResult: goodRobots,
+    llmsResult: { 'llms.txt': { exists: false }, 'llms-full.txt': { exists: false } },
+    schemaResult: bareSchema,
+    contentResult: null,
+    presenceEvidence: {},
+  });
+  assert.equal(result.verdict, 'fix');
+  assert.equal(result.vetoes.length, 0);
+});
+
+test('computeGeoScore — veto cap respects the /75 presence-unknown denominator', () => {
+  const result = computeGeoScore({
+    robotsResult: vetoRobots,
+    llmsResult: goodLlms,
+    schemaResult: goodSchema,
+    contentResult: goodContent,
+    presenceEvidence: {},
+  });
+  assert.equal(result.totalMax, 75);
+  const normalised = Math.round((result.total / result.totalMax) * 100);
+  assert.ok(normalised <= 40, `capped normalised should be <= 40 even at /75, got ${normalised}`);
 });

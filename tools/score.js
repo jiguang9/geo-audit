@@ -164,6 +164,29 @@ function scoreTechnical(robotsResult, llmsResult, schemaResult) {
   return { raw: Math.min(20, raw), max: 20, confidence: 'high' };
 }
 
+// Hard veto conditions: signals that mean AI systems cannot currently fetch or
+// cite the page, regardless of how good the on-page structure/authority is.
+// A veto caps the overall score and forces a `block` verdict.
+function computeVetoes(robotsResult, schemaResult) {
+  const vetoes = [];
+
+  // V-ACCESS: AI/search crawlers are blocked, or the page is unreachable.
+  const blockedCrawlers = (robotsResult && robotsResult.crawlers)
+    ? robotsResult.crawlers.filter(c => c.citationRisk === 'high')
+    : [];
+  const pageUnreachable = !!(schemaResult && schemaResult.error);
+  if (blockedCrawlers.length > 0 || pageUnreachable) {
+    vetoes.push({
+      code: 'V-ACCESS',
+      dimension: 'technical',
+      blockedCrawlers: blockedCrawlers.map(c => c.name),
+      pageUnreachable,
+    });
+  }
+
+  return vetoes;
+}
+
 function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult }) {
   const structure = scoreStructure(schemaResult, contentResult);
   const authority = scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult);
@@ -173,14 +196,33 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   const presenceKnown = presence.raw !== null;
   const knownTotal = structure.raw + authority.raw + technical.raw;
 
-  const total = presenceKnown ? knownTotal + presence.raw : knownTotal;
+  const rawTotal = presenceKnown ? knownTotal + presence.raw : knownTotal;
   // When presence is unknown, denominator is 75 (only assessed dimensions).
   // Consumers must use totalMax (not a hardcoded 100) when displaying the score.
   const totalMax = presenceKnown ? 100 : 75;
 
+  // Hard veto: if AI cannot fetch/cite the page, cap the score so the level
+  // cannot exceed 2 (normalised ≤ 40), no matter how strong other dimensions are.
+  const vetoes = computeVetoes(robotsResult, schemaResult);
+  const CAP_NORMALISED = 40;
+  let total = rawTotal;
+  if (vetoes.length > 0) {
+    const cappedTotal = Math.floor((CAP_NORMALISED / 100) * totalMax);
+    total = Math.min(rawTotal, cappedTotal);
+  }
+
   // Compute level on a normalised 0-100 scale so thresholds stay consistent.
   const normalised = Math.round((total / totalMax) * 100);
   const level = normalised <= 20 ? 1 : normalised <= 40 ? 2 : normalised <= 60 ? 3 : normalised <= 80 ? 4 : 5;
+
+  // Overall verdict — a top-line gate answering "can AI cite this right now?".
+  //   block: a hard veto is active (crawlers blocked / page unreachable)
+  //   ship:  no veto, healthy score (level ≥ 4) and technical baseline met
+  //   fix:   everything else — reachable but needs work before it gets cited
+  let verdict;
+  if (vetoes.length > 0) verdict = 'block';
+  else if (normalised >= 61 && technical.raw >= 8) verdict = 'ship';
+  else verdict = 'fix';
 
   // Overall confidence: minimum of the four non-unknown dimensions ('high' > 'medium' > 'low')
   const confidenceRank = { high: 3, medium: 2, low: 1 };
@@ -192,6 +234,10 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   return {
     total,
     totalMax,
+    rawTotal,
+    capped: total < rawTotal,
+    verdict,
+    vetoes,
     presenceUnknown: !presenceKnown,
     level,
     confidence,
@@ -199,4 +245,4 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   };
 }
 
-module.exports = { computeGeoScore, scoreStructure, scoreAuthority, scorePresence, scoreTechnical };
+module.exports = { computeGeoScore, computeVetoes, scoreStructure, scoreAuthority, scorePresence, scoreTechnical };

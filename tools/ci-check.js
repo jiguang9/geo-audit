@@ -60,10 +60,15 @@ async function main() {
   const normalized = Math.round((s.total / s.totalMax) * 100);
   const d = s.dimensions;
 
-  const pass = normalized >= minScore;
-  const statusLine = minScore > 0
-    ? `GEO score: ${normalized}/100 (threshold: ${minScore}) — ${pass ? 'PASS ✅' : 'FAIL ❌'}`
-    : `GEO score: ${normalized}/100 (raw: ${s.total}/${s.totalMax}, Level ${s.level})`;
+  // A `block` verdict (e.g. AI crawlers blocked / page unreachable) means the
+  // page cannot be cited at all — fail CI regardless of the numeric threshold.
+  const blocked = s.verdict === 'block';
+  const pass = normalized >= minScore && !blocked;
+  const statusLine = blocked
+    ? `GEO score: ${normalized}/100 — FAIL ❌ (verdict: blocked${s.capped ? `, raw ${s.rawTotal}` : ''})`
+    : minScore > 0
+      ? `GEO score: ${normalized}/100 (threshold: ${minScore}) — ${pass ? 'PASS ✅' : 'FAIL ❌'}`
+      : `GEO score: ${normalized}/100 (raw: ${s.total}/${s.totalMax}, Level ${s.level})`;
 
   console.log(statusLine);
   console.log(`  Structure:  ${d.structure.raw}/${d.structure.max}`);
@@ -78,7 +83,11 @@ async function main() {
   }
 
   if (!pass) {
-    console.error(`\nGEO score ${normalized} is below the required minimum of ${minScore}.`);
+    if (blocked) {
+      console.error(`\nVerdict is "blocked": AI systems cannot currently fetch or cite this page.`);
+    } else {
+      console.error(`\nGEO score ${normalized} is below the required minimum of ${minScore}.`);
+    }
     process.exit(1);
   }
 }

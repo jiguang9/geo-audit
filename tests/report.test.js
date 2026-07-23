@@ -290,6 +290,40 @@ test('renderReport — no trend section without previousAudit', () => {
   assert.ok(!report.includes('得分趋势'), 'No trend section without history');
 });
 
+// ── Verdict badge tests ─────────────────────────────────────────────────────
+
+function makeBlockedScore() {
+  return computeGeoScore({
+    robotsResult: blockedRobots,
+    llmsResult: goodLlms,
+    schemaResult: goodSchema,
+    contentResult: null,
+    presenceEvidence: {},
+  });
+}
+
+test('renderReport — healthy site shows a non-block verdict badge', () => {
+  const score = makeScore({ hasWikipedia: true, hasZhihu: true, reviewPlatformCount: 2, mediaMentionCount: 2, socialPlatformCount: 3 });
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(report.includes('裁决'), 'Should include verdict header');
+  assert.ok(!report.includes('被阻断'), 'Healthy site should not be blocked');
+});
+
+test('renderReport — blocked site shows 被阻断 badge, veto reason, and capped raw score', () => {
+  const score = makeBlockedScore();
+  const report = renderReport(score, { robotsResult: blockedRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(report.includes('被阻断'), 'Should show blocked verdict');
+  assert.ok(report.includes('V-ACCESS'), 'Should list the veto reason code');
+  assert.ok(report.includes(String(score.rawTotal)), 'Should show the uncapped raw score');
+});
+
+test('renderReport — blocked verdict renders in English', () => {
+  const score = makeBlockedScore();
+  const report = renderReport(score, { robotsResult: blockedRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context, lang: 'en' });
+  assert.ok(report.includes('Blocked'), 'Should show English blocked label');
+  assert.ok(report.includes('Verdict'), 'Should show English verdict header');
+});
+
 test('report-strings — zh and en locales expose identical shapes', () => {
   const STRINGS = require('../tools/report-strings.js');
   function shapeOf(obj, path = '') {

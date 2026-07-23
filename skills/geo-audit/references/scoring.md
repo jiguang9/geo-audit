@@ -90,6 +90,43 @@ scale the 75-point known total proportionally before determining level.
 
 ---
 
+## Veto Gate and Overall Verdict
+
+The four-dimension score is a sum, but a high structure/authority score is
+meaningless if AI systems cannot fetch the page at all. To prevent a misleadingly
+high total, `computeGeoScore` applies **hard veto conditions** and emits a
+top-line **verdict** (see `tools/score.js`).
+
+### Veto conditions
+
+| Code | Dimension | Trigger |
+|------|-----------|---------|
+| `V-ACCESS` | Technical | An AI/search crawler is blocked at high citation risk (`citationRisk === 'high'`), **or** the target page is unreachable / unparseable (`schemaResult.error`) |
+
+When any veto is active, the **normalised score is capped at 40** (level ≤ 2),
+no matter how strong the other dimensions are. The uncapped value is preserved as
+`rawTotal`, and `capped: true` is set so the report can show
+`（原始分 X，因否决项封顶至 Y）`. Presence-unknown scoring (the /75 denominator)
+is respected — the cap is computed from `totalMax`.
+
+`V-ACCESS` overlaps with the `T-ACCESS` failure diagnostic code, but the two serve
+different roles: `T-ACCESS` explains the fix, `V-ACCESS` enforces the score cap and
+the verdict.
+
+### Verdict
+
+| Verdict | Symbol | Condition |
+|---------|--------|-----------|
+| `block` | 🔴 被阻断 / Blocked | Any veto is active — AI cannot fetch or cite the page right now |
+| `ship` | 🟢 可引用 / Citable | No veto, normalised ≥ 61 (level ≥ 4), and technical raw ≥ 8 |
+| `fix` | 🟡 需修复 / Needs work | Reachable, but not yet strong enough to be reliably cited |
+
+The verdict is derived only from dimension scores and tool results that
+`score.js` already receives, so it does not depend on report-layer diagnostics.
+It renders as a badge at the top of the report, above the narrative and score table.
+
+---
+
 ## Score Interpretation Notes
 
 - A score of 60+ on technical + structure alone (without presence data) suggests

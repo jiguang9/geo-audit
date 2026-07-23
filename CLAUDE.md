@@ -45,6 +45,7 @@ automatically render a Score Trend section.
 
 The Markdown report includes:
 
+- **总裁决** — top-line 🟢 可引用 / 🟡 需修复 / 🔴 被阻断 gate; a hard veto (`V-ACCESS`: AI crawlers blocked or page unreachable) caps the score at level 2 and displays the uncapped `rawTotal`
 - **GEO 得分** — 4-dimension score with confidence symbols (●/◐/○)
 - **关键技术证据** — robots.txt, llms.txt, Schema types found/missing, Schema attribute gaps (`Organization.sameAs`, `Article.dateModified`, etc.), article-page author/date signals, quotable content blocks and missing block types
 - **引用证据矩阵** — query × platform matrix when `citationEvidence` is in context

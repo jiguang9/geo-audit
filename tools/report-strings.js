@@ -197,6 +197,20 @@ const zh = {
       weakAuthority: (brand, structOk) => `${brand} 的内容结构${structOk ? '较好' : '基本具备'}，但权威信号不足（缺作者署名、日期或 Organization schema），AI 系统难以判断内容可信度，影响被引用概率。`,
       weakPresence: brand => `${brand} 的技术访问和内容结构已有一定基础，当前主要瓶颈是第三方存在感不足 — AI 系统更倾向引用在外部平台被反复提及的实体。`,
     },
+    verdict: {
+      header: '**裁决**',
+      ship: { icon: '🟢', label: '可引用' },
+      fix: { icon: '🟡', label: '需修复' },
+      block: { icon: '🔴', label: '被阻断' },
+      shipDesc: '技术、结构、权威信号健全，已具备被 AI 引用的基础。',
+      fixDesc: '页面可被抓取，但在被稳定引用前仍需补齐关键信号。',
+      blockDesc: 'AI 当前无法抓取或引用本页，须先解除阻断。',
+      cappedNote: (raw, capped) => `（原始分 ${raw}，因否决项封顶至 ${capped}）`,
+      reasonsHeader: '否决原因：',
+      reasons: {
+        'V-ACCESS': names => `AI 爬虫被 robots.txt 封禁${names ? `（${names}）` : ''}，或页面不可达 — AI 无法读取内容，其余得分均无意义。`,
+      },
+    },
   },
 };
 
@@ -390,6 +404,20 @@ const en = {
       weakBoth: (brand, techOk) => `${brand}'s technical access is ${techOk ? 'solid' : 'basically in place'}, but the homepage lacks machine-readable entity signals (schema, author, dates) and the content structure is hard for AI to extract — the core reason for the low citation rate.`,
       weakAuthority: (brand, structOk) => `${brand}'s content structure is ${structOk ? 'good' : 'basically in place'}, but authority signals are weak (missing author bylines, dates, or Organization schema), so AI systems cannot judge credibility, which lowers citation probability.`,
       weakPresence: brand => `${brand} has a reasonable technical and structural foundation. The current bottleneck is third-party presence — AI systems prefer citing entities that are repeatedly mentioned on external platforms.`,
+    },
+    verdict: {
+      header: '**Verdict**',
+      ship: { icon: '🟢', label: 'Citable' },
+      fix: { icon: '🟡', label: 'Needs work' },
+      block: { icon: '🔴', label: 'Blocked' },
+      shipDesc: 'Technical, structural, and authority signals are solid — a citable foundation is in place.',
+      fixDesc: 'The page is fetchable, but key signals need work before it is reliably cited.',
+      blockDesc: 'AI cannot currently fetch or cite this page — the block must be cleared first.',
+      cappedNote: (raw, capped) => `(raw score ${raw}, capped to ${capped} by a veto)`,
+      reasonsHeader: 'Veto reasons:',
+      reasons: {
+        'V-ACCESS': names => `AI crawlers are blocked in robots.txt${names ? ` (${names})` : ''}, or the page is unreachable — AI cannot read the content, which makes every other score moot.`,
+      },
     },
   },
 };
