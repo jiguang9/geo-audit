@@ -35,4 +35,4 @@ runs:
         GEO_BRAND: ${{ inputs.brand }}
         GEO_MIN_SCORE: ${{ inputs.min-score }}
         GEO_LANG: ${{ inputs.lang }}
-      run: node "${{ github.action_path }}/tools/ci-check.js"
+      run: node "${{ github.action_path }}/skills/geo-audit/tools/ci-check.js"

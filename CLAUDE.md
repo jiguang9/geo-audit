@@ -17,6 +17,19 @@ LLM SEO, AI search optimization, 生成式引擎优化, AI 搜索诊断, 被 AI 
 npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 ```
 
+## Layout
+
+Everything an install needs lives in `skills/geo-audit/` (SKILL.md, references,
+evals, agents, tools, update.sh, LICENSE), because `npx skills add` copies only that
+folder. The repo-root `tools`, `agents` and `update.sh` are symlinks into it, so
+`node tools/...`, the tests and `action.yml` keep working from the root. Edit the
+real files under `skills/geo-audit/`, and keep anything an installed skill runs
+inside that folder.
+
+`update.sh` replaces only the shipped files in an installed skill folder and keeps
+`.agents/` and other user files; `GEO_AUDIT_TARBALL` overrides the download (used
+for testing against a local tarball).
+
 ## Running Tools (Claude Code)
 
 Run the full audit first, then spot-check individual pages:

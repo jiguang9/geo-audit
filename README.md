@@ -192,14 +192,22 @@ jobs:
 <details>
 <summary><b>更新</b></summary>
 
-`npx skills add` 装的是普通文件夹（没有 `.git`），在 Codex 这类沙箱里 `git pull` 和 `npx` 都可能用不了。用自带的 `update.sh`，只需要 `curl` 或 `wget`：
+装好的 Skill 文件夹里自带 `update.sh`，只需要 `curl` 或 `wget`，在 Codex 这类沙箱里也能用：
 
 ```bash
 bash ~/.claude/skills/geo-audit/update.sh   # Claude Code
 bash ~/.codex/skills/geo-audit/update.sh    # Codex
 ```
 
-路径按你实际的安装位置调整。脚本会依次尝试 `git pull`、`curl`、`wget`。
+路径按你实际的安装位置调整，就是放 `SKILL.md` 的那个文件夹。脚本只替换 geo-audit 自带的文件（SKILL.md、tools、references 等），`.agents/` 里的分数快照这类你自己的数据不会动；如果这个文件夹是 `git clone` 下来的，会改用 `git pull`。
+
+**Skill 文件夹里没有 `tools/`，或者跑了 `update.sh` 但 SKILL.md 没变的，先跑一次下面这条。** 这是旧版的两个问题：`npx skills add` 只装上了 SKILL.md 和 references，诊断脚本 `tools/` 根本没装进来；旧版 `update.sh` 也只会更新 tools，SKILL.md 和 references 不变。用这条命令直接跑新版脚本，之后就可以用文件夹里的 `update.sh` 了：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jiguang9/geo-audit/main/skills/geo-audit/update.sh | bash -s -- ~/.claude/skills/geo-audit
+```
+
+旧版脚本留在文件夹里的 README.md 等文件不影响使用，脚本跑完会列出来，可以删掉。
 
 </details>
 

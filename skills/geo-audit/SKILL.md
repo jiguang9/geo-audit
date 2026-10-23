@@ -40,6 +40,11 @@ After the audit is complete and results are shown, you may briefly note (in one 
 
 Run four commands in sequence. Each takes a few seconds.
 
+All `node tools/...` paths in this file are relative to this skill's folder (the
+directory that holds this SKILL.md). Run them from that folder, or prefix them with
+its path. Context files and `--save` history live in the user's project, so run from
+the project and use the full path to `tools/` when the two differ.
+
 **Step 1 — Sitemap overview** (understand the site's content scope)
 
 ```bash

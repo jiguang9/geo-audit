@@ -32,16 +32,26 @@ Works with: Claude Code, Codex, OpenClaw, Hermes, Cursor, Windsurf
 
 ## Update
 
-`npx skills add` copies files as a plain folder (no `.git`), so `git pull`
-and `npx` both fail inside sandboxed shells like Codex. Use `update.sh` instead
-— it only needs `curl` or `wget`:
+The installed skill folder ships its own `update.sh`, which only needs `curl`
+or `wget`, so it also works in sandboxed shells like Codex:
 
 ```bash
 bash ~/.codex/skills/geo-audit/update.sh
-# Adjust the path to wherever the skill is installed
+# Adjust the path to the folder that holds SKILL.md
 ```
 
-`update.sh` auto-selects the best available method: `git pull` → `curl` → `wget`.
+It replaces only the files geo-audit ships (SKILL.md, tools, references, …) and
+leaves your own data such as `.agents/` score history alone. A `git clone`
+install is updated with `git pull` instead.
+
+**No `tools/` folder in your install, or SKILL.md unchanged after `update.sh`? Run this once.** Older `npx skills add` installs
+got SKILL.md and references but not the `tools/` scripts, and the old
+`update.sh` only refreshed `tools/`. This runs the new script directly; after
+that the bundled `update.sh` works:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/jiguang9/geo-audit/main/skills/geo-audit/update.sh | bash -s -- ~/.codex/skills/geo-audit
+```
 
 ## Usage
 
