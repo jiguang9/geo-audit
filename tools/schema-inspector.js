@@ -16,13 +16,28 @@ const {
 const RECOMMENDED_BY_TYPE = {
   homepage:   ['Organization', 'WebSite'],
   article:    ['Article', 'BreadcrumbList'],
-  product:    ['Product', 'AggregateRating'],
+  // No AggregateRating here: it is only valid with real user ratings, never a default recommendation
+  product:    ['Product'],
   about:      ['Person', 'Organization'],
   faq:        ['FAQPage'],
   comparison: ['ItemList', 'FAQPage'],
   pricing:    ['Product'],
   general:    ['WebPage'],
 };
+
+// A recommended type also counts as present when a more specific type is found:
+// BlogPosting/NewsArticle are Article subtypes; software pages are described with
+// SoftwareApplication/WebApplication rather than Product.
+const SATISFIED_BY = {
+  Article:      ['BlogPosting', 'NewsArticle', 'TechArticle', 'ScholarlyArticle', 'Report'],
+  Product:      ['SoftwareApplication', 'WebApplication', 'MobileApplication'],
+  Organization: ['Corporation', 'LocalBusiness', 'NGO', 'EducationalOrganization'],
+  WebPage:      ['AboutPage', 'CollectionPage', 'ContactPage', 'FAQPage', 'ItemPage', 'ProfilePage', 'QAPage'],
+};
+
+function hasTypeOrSubtype(schemaTypes, type) {
+  return schemaTypes.includes(type) || (SATISFIED_BY[type] || []).some(t => schemaTypes.includes(t));
+}
 
 // Attribute-level checks: which properties are expected per schema type
 const REQUIRED_ATTRS = {
@@ -137,7 +152,7 @@ async function inspectSchema(pageUrl) {
 
   const pageType = detectPageType(url, schemaTypes);
   const recommendedForType = RECOMMENDED_BY_TYPE[pageType] || RECOMMENDED_BY_TYPE.general;
-  const missing = recommendedForType.filter(t => !schemaTypes.includes(t));
+  const missing = recommendedForType.filter(t => !hasTypeOrSubtype(schemaTypes, t));
   const missingProperties = checkSchemaAttributes(jsonLdItems);
 
   const meta = extractMeta(html);
@@ -208,4 +223,4 @@ if (require.main === module) {
   }).catch(err => { console.error(err.message); process.exit(1); });
 }
 
-module.exports = { inspectSchema, collectSchemaTypes, detectPageType };
+module.exports = { inspectSchema, collectSchemaTypes, detectPageType, hasTypeOrSubtype };

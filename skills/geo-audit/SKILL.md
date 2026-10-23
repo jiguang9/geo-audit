@@ -121,10 +121,14 @@ See `references/scoring.md` for breakdown rules.
 | Level | Score | Description |
 |-------|-------|-------------|
 | 1 | 0–20 | AI crawlers blocked or unreachable |
-| 2 | 21–40 | Reachable but rarely cited |
-| 3 | 41–60 | Occasionally cited |
-| 4 | 61–80 | Regularly cited |
-| 5 | 81–100 | High-frequency citation, strong authority |
+| 2 | 21–40 | Reachable, but conditions for citation are weak |
+| 3 | 41–60 | Basic conditions for citation in place, clear gaps remain |
+| 4 | 61–80 | Conditions for regular citation in place |
+| 5 | 81–100 | Conditions for citation fully in place |
+
+Levels describe whether the page is *ready* to be cited, inferred from on-page
+signals. The audit never measures actual citations; only the monthly query tests
+in Phase 5 (or `citationEvidence`) can show whether AI really cites the site.
 
 ## Phase 4 — Platform-Specific Guidance
 
@@ -147,6 +151,9 @@ domain in config files, `package.json` homepage, CNAME, or ask the user),
 2. **JSON-LD** — insert the Organization / BlogPosting schema snippets from the
    P0 actions into the site's layout or template files (use the templates in
    `tools/templates/` as a base, filled with real site data from the audit).
+   Never add `AggregateRating` or `Review` markup unless the page already shows
+   real ratings from real users; invented ratings violate Google's structured
+   data policies.
 3. **canonical / meta** — add missing tags to the HTML head template.
 
 This closes the loop: diagnose → fix in one session. Never write into the

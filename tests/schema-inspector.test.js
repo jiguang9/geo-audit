@@ -146,3 +146,24 @@ test('extractHeadings — excludes headings inside nav and footer', () => {
   assert.equal(h.h1.length, 1, 'Only main h1 should count');
   assert.equal(h.h2.length, 1, 'Only main h2 should count');
 });
+
+// ── Recommended types accept subtypes; no default rating recommendation ─────
+
+test('hasTypeOrSubtype — BlogPosting satisfies a recommended Article', () => {
+  const { hasTypeOrSubtype } = require('../tools/schema-inspector.js');
+  assert.equal(hasTypeOrSubtype(['BlogPosting', 'BreadcrumbList'], 'Article'), true);
+  assert.equal(hasTypeOrSubtype(['NewsArticle'], 'Article'), true);
+  assert.equal(hasTypeOrSubtype(['WebSite'], 'Article'), false);
+});
+
+test('hasTypeOrSubtype — SoftwareApplication satisfies a recommended Product', () => {
+  const { hasTypeOrSubtype } = require('../tools/schema-inspector.js');
+  assert.equal(hasTypeOrSubtype(['SoftwareApplication'], 'Product'), true);
+  assert.equal(hasTypeOrSubtype(['WebApplication'], 'Product'), true);
+});
+
+test('product template carries no placeholder rating', () => {
+  const tpl = require('../tools/templates/product-schema.json');
+  assert.equal(tpl.aggregateRating, undefined, 'template must not invite invented ratings');
+  assert.ok(!JSON.stringify(tpl).includes('AggregateRating'));
+});

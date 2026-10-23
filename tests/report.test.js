@@ -376,3 +376,48 @@ test('renderReport — FAQ action mentions existing FAQ section when one was fou
   const report = renderWith({ ...bareSchema, structure: { ...bareSchema.structure, faqDetailsBlocks: 2 } });
   assert.ok(report.includes('首页有 FAQ 内容'), 'should note the existing FAQ section');
 });
+
+// ── Verdict / narrative must not contradict a weak dimension ────────────────
+
+function makeShipWithWeakStructure() {
+  const score = makeScore();
+  // Passing total, strong tech/authority, but extractability in the red (like 11/30)
+  score.verdict = 'ship';
+  score.dimensions.structure.raw = 11;
+  score.dimensions.technical.raw = 18;
+  score.dimensions.authority.raw = 19;
+  return score;
+}
+
+test('renderReport — ship verdict names a weak dimension instead of calling everything healthy', () => {
+  const score = makeShipWithWeakStructure();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  const verdictLine = report.split('\n').find(l => l.includes('裁决'));
+  assert.ok(verdictLine.includes('内容可摘取性偏弱'), `verdict should name the weak dimension, got: ${verdictLine}`);
+  assert.ok(!report.includes('健全'), 'must not claim all signals are healthy');
+});
+
+test('renderReport — narrative points at extractability when only structure is weak', () => {
+  const score = makeShipWithWeakStructure();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(report.includes('主要短板是内容可摘取性'), 'narrative should point at extractability');
+  assert.ok(!report.includes('主要瓶颈是第三方存在感'), 'narrative must not blame presence first');
+});
+
+test('renderReport — level labels describe readiness, not measured citations', () => {
+  const STRINGS = require('../tools/report-strings.js');
+  for (const lang of ['zh', 'en']) {
+    for (const label of Object.values(STRINGS[lang].levelLabels)) {
+      assert.ok(!/稳定被引用，|高频被引用|regularly cited,|high-frequency citation/.test(label), `${lang} label claims observed citations: ${label}`);
+    }
+  }
+});
+
+test('renderReport — wildcard-allowed crawlers render as ✅ with a label', () => {
+  const robots = { ...goodRobots, crawlers: [{ name: 'GPTBot', result: 'wildcard-allowed', platform: 'ChatGPT' }] };
+  const score = makeScore();
+  const zh = renderReport(score, { robotsResult: robots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context });
+  assert.ok(/✅ GPTBot\s+通配符放行/.test(zh), 'zh should show ✅ 通配符放行');
+  const en = renderReport(score, { robotsResult: robots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context, lang: 'en' });
+  assert.ok(/✅ GPTBot\s+allowed via \*/.test(en), 'en should show ✅ allowed via *');
+});

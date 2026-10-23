@@ -83,10 +83,13 @@ scale the 75-point known total proportionally before determining level.
 | Level | Score (100-pt) | Description |
 |-------|----------------|-------------|
 | 1 | 0–20 | AI crawlers blocked or page unreachable |
-| 2 | 21–40 | Reachable but structurally poor, rarely cited |
-| 3 | 41–60 | Basic GEO in place, occasional citations |
-| 4 | 61–80 | Strong structure + authority, regular citations |
-| 5 | 81–100 | Full GEO optimisation, high-frequency citation |
+| 2 | 21–40 | Reachable but structurally poor; conditions for citation are weak |
+| 3 | 41–60 | Basic GEO in place; clear gaps in structure or authority |
+| 4 | 61–80 | Strong structure + authority; conditions for regular citation in place |
+| 5 | 81–100 | Full GEO optimisation; conditions for citation fully in place |
+
+Levels describe readiness inferred from on-page signals, not measured citations.
+Only query tests (`citationEvidence`) show whether AI actually cites the site.
 
 ---
 
@@ -118,7 +121,7 @@ the verdict.
 | Verdict | Symbol | Condition |
 |---------|--------|-----------|
 | `block` | 🔴 被阻断 / Blocked | Any veto is active — AI cannot fetch or cite the page right now |
-| `ship` | 🟢 可引用 / Citable | No veto, normalised ≥ 61 (level ≥ 4), and technical raw ≥ 8 |
+| `ship` | 🟢 可引用 / Citable | No veto, normalised ≥ 61 (level ≥ 4), and technical raw ≥ 8. The badge text names any dimension below 40% of its max instead of calling all signals healthy |
 | `fix` | 🟡 需修复 / Needs work | Reachable, but not yet strong enough to be reliably cited |
 
 The verdict is derived only from dimension scores and tool results that

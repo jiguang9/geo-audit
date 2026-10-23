@@ -162,10 +162,13 @@ and the total is shown as `N/75` rather than penalising with a zero.
 | Level | Score | Status |
 |-------|-------|--------|
 | 1 | 0–20 | AI crawlers blocked or unreachable |
-| 2 | 21–40 | Reachable but rarely cited |
-| 3 | 41–60 | Occasionally cited |
-| 4 | 61–80 | Regularly cited across platforms |
-| 5 | 81–100 | High-frequency citation, strong authority |
+| 2 | 21–40 | Reachable, but conditions for citation are weak |
+| 3 | 41–60 | Basic conditions for citation in place, clear gaps remain |
+| 4 | 61–80 | Conditions for regular citation in place |
+| 5 | 81–100 | Conditions for citation fully in place |
+
+Levels describe readiness inferred from on-page signals. The audit does not
+measure actual citations; use the monitoring queries for that.
 
 ## AI Platforms Covered
 

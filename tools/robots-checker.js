@@ -40,7 +40,9 @@ function pathMatches(rulePattern, urlPath) {
   }
 }
 
-// Returns: 'allowed' | 'blocked' | 'not-mentioned' | 'unknown'
+// Returns: 'allowed' | 'blocked' | 'wildcard-allowed' | 'not-mentioned' | 'unknown'
+// 'wildcard-allowed': no group names this bot, but the `User-agent: *` group lets it in.
+// 'not-mentioned': no group applies at all (still allowed by default, nothing declared).
 function parseCrawlerStatus(robotsTxt, crawlerName, targetPath = '/') {
   const target = crawlerName.toLowerCase();
   const lines = robotsTxt.split(/\r?\n/).map(l => l.split('#')[0].trim()).filter(Boolean);
@@ -52,6 +54,7 @@ function parseCrawlerStatus(robotsTxt, crawlerName, targetPath = '/') {
   const specificRules = [];
   const globalRules = [];
   let foundSpecific = false;
+  let hasGlobalGroup = false;
 
   for (const line of lines) {
     const lower = line.toLowerCase();
@@ -65,6 +68,7 @@ function parseCrawlerStatus(robotsTxt, crawlerName, targetPath = '/') {
       }
       currentAgents.push(agent);
       if (agent === target) foundSpecific = true;
+      if (agent === '*') hasGlobalGroup = true;
       continue;
     }
 
@@ -111,9 +115,8 @@ function parseCrawlerStatus(robotsTxt, crawlerName, targetPath = '/') {
 
   // No specific rules — inherit global (*) rules
   const best = findBestRule(globalRules);
-  if (!best) return 'not-mentioned';
-  if (best.type === 'disallow' && best.path !== '') return 'blocked';
-  return 'not-mentioned';
+  if (best && best.type === 'disallow' && best.path !== '') return 'blocked';
+  return hasGlobalGroup ? 'wildcard-allowed' : 'not-mentioned';
 }
 
 async function checkRobots(siteUrl) {
@@ -188,12 +191,12 @@ if (require.main === module) {
     if (r.error) { console.error('Error:', r.error); process.exit(1); }
     console.log(`\nrobots.txt — ${r.url}`);
     console.log(`Status: ${r.accessible ? `HTTP ${r.httpStatus}` : 'Not accessible'}\n`);
-    const icon = { allowed: '✅', blocked: '❌', 'not-mentioned': '⚠️', unknown: '❓' };
+    const icon = { allowed: '✅', 'wildcard-allowed': '✅', blocked: '❌', 'not-mentioned': '⚠️', unknown: '❓' };
     const riskIcon = { high: '🔴', medium: '🟡', low: '🔵', none: '⬜' };
-    console.log(`${'Crawler'.padEnd(22)} ${'Role'.padEnd(10)} ${'Result'.padEnd(15)} ${'Risk'.padEnd(8)} Platform`);
+    console.log(`${'Crawler'.padEnd(22)} ${'Role'.padEnd(10)} ${'Result'.padEnd(17)} ${'Risk'.padEnd(8)} Platform`);
     console.log('─'.repeat(80));
     for (const c of r.crawlers) {
-      console.log(`${icon[c.result] || '❓'} ${c.name.padEnd(20)} ${c.role.padEnd(10)} ${c.result.padEnd(15)} ${riskIcon[c.citationRisk] || '⬜'} ${c.citationRisk.padEnd(7)} ${c.platform}`);
+      console.log(`${icon[c.result] || '❓'} ${c.name.padEnd(20)} ${c.role.padEnd(10)} ${c.result.padEnd(17)} ${riskIcon[c.citationRisk] || '⬜'} ${c.citationRisk.padEnd(7)} ${c.platform}`);
     }
     if (r.sitemapUrls.length > 0) {
       console.log('\nSitemaps from robots.txt:');

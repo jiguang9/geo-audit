@@ -93,7 +93,7 @@ Output may be in Chinese if the user's language preference is Chinese.
 **Expected behaviour:**
 - Skill (or agent) runs `node tools/robots-checker.js https://example.com`
 - Outputs per-crawler status table
-- Notes that `not-mentioned` ≠ `blocked`
+- Notes that `not-mentioned` ≠ `blocked`, and that `wildcard-allowed` means the `User-agent: *` group already lets the crawler in
 - Does not run a full GEO audit unless requested
 
 ---

@@ -9,14 +9,15 @@
 const zh = {
   levelLabels: {
     1: 'Level 1：AI 爬虫被屏蔽或页面不可达',
-    2: 'Level 2：可访问，但引用信号偏弱',
-    3: 'Level 3：具备被 AI 引用的基础，但权威与实体链不稳定',
-    4: 'Level 4：稳定被引用，结构与权威较强',
-    5: 'Level 5：高频被引用，GEO 优化全面',
+    2: 'Level 2：能访问，但被引用的条件偏弱',
+    3: 'Level 3：具备被 AI 引用的基础条件，结构或权威还有明显短板',
+    4: 'Level 4：具备被稳定引用的条件，结构与权威较强',
+    5: 'Level 5：被引用的条件全面具备',
   },
 
   robotsError: e => `robots.txt   错误: ${e}`,
   robotsInaccessible: status => `robots.txt   不可访问 (HTTP ${status})`,
+  robotsStatus: { 'wildcard-allowed': '通配符放行', 'not-mentioned': '未声明' },
   citationRiskWarning: names => `⚠️  引用风险：以下爬虫被屏蔽（直接影响引用） — ${names}`,
 
   llmsError: e => `llms.txt     错误: ${e}`,
@@ -197,6 +198,7 @@ const zh = {
       techBlocked: brand => `${brand} 当前 AI 可见性的首要障碍是技术层面：爬虫访问受限或关键机器可读文件缺失，在解决技术问题前，其他优化效果有限。`,
       weakBoth: (brand, techOk) => `${brand} 的技术访问基础${techOk ? '不错' : '基本具备'}，但首页缺少机器可读的实体信号（Schema、作者、日期），内容结构对 AI 的可提取性也有待加强，这是当前被引用率低的核心原因。`,
       weakAuthority: (brand, structOk) => `${brand} 的内容结构${structOk ? '较好' : '基本具备'}，但权威信号不足（缺作者署名、日期或 Organization schema），AI 系统难以判断内容可信度，影响被引用概率。`,
+      weakStructure: brand => `${brand} 的技术访问和权威信号已有基础，当前主要短板是内容可摘取性：页面缺少 AI 能直接截取的问答、列表和可独立引用的段落。`,
       weakPresence: brand => `${brand} 的技术访问和内容结构已有一定基础，当前主要瓶颈是第三方存在感不足 — AI 系统更倾向引用在外部平台被反复提及的实体。`,
     },
     verdict: {
@@ -204,7 +206,9 @@ const zh = {
       ship: { icon: '🟢', label: '可引用' },
       fix: { icon: '🟡', label: '需修复' },
       block: { icon: '🔴', label: '被阻断' },
-      shipDesc: '技术、结构、权威信号健全，已具备被 AI 引用的基础。',
+      shipDesc: '能被 AI 抓取，总分达到门槛，已具备被引用的基础。',
+      shipDescWithGaps: dims => `能被 AI 抓取，总分达到门槛，但${dims}偏弱，要先补。`,
+      dimJoiner: '、',
       fixDesc: '页面可被抓取，但在被稳定引用前仍需补齐关键信号。',
       blockDesc: 'AI 当前无法抓取或引用本页，须先解除阻断。',
       cappedNote: (raw, capped) => `（原始分 ${raw}，因否决项封顶至 ${capped}）`,
@@ -219,14 +223,15 @@ const zh = {
 const en = {
   levelLabels: {
     1: 'Level 1: AI crawlers blocked or site unreachable',
-    2: 'Level 2: reachable, but citation signals are weak',
-    3: 'Level 3: citable foundation, but authority and entity signals are unstable',
-    4: 'Level 4: regularly cited, strong structure and authority',
-    5: 'Level 5: high-frequency citation, comprehensive GEO optimization',
+    2: 'Level 2: reachable, but the conditions for citation are weak',
+    3: 'Level 3: basic conditions for AI citation in place, with clear gaps in structure or authority',
+    4: 'Level 4: conditions for regular citation in place, strong structure and authority',
+    5: 'Level 5: conditions for citation fully in place',
   },
 
   robotsError: e => `robots.txt   error: ${e}`,
   robotsInaccessible: status => `robots.txt   not accessible (HTTP ${status})`,
+  robotsStatus: { 'wildcard-allowed': 'allowed via *', 'not-mentioned': 'not-mentioned' },
   citationRiskWarning: names => `⚠️  Citation risk: the following crawlers are blocked (directly hurts citation) — ${names}`,
 
   llmsError: e => `llms.txt     error: ${e}`,
@@ -407,6 +412,7 @@ const en = {
       techBlocked: brand => `${brand}'s primary AI-visibility blocker is technical: crawler access is restricted or key machine-readable files are missing. Until that is fixed, other optimizations will have limited effect.`,
       weakBoth: (brand, techOk) => `${brand}'s technical access is ${techOk ? 'solid' : 'basically in place'}, but the homepage lacks machine-readable entity signals (schema, author, dates) and the content structure is hard for AI to extract — the core reason for the low citation rate.`,
       weakAuthority: (brand, structOk) => `${brand}'s content structure is ${structOk ? 'good' : 'basically in place'}, but authority signals are weak (missing author bylines, dates, or Organization schema), so AI systems cannot judge credibility, which lowers citation probability.`,
+      weakStructure: brand => `${brand} has a solid technical and authority foundation. The main gap is extractability: the page lacks Q&A, lists, and self-contained paragraphs that AI can quote directly.`,
       weakPresence: brand => `${brand} has a reasonable technical and structural foundation. The current bottleneck is third-party presence — AI systems prefer citing entities that are repeatedly mentioned on external platforms.`,
     },
     verdict: {
@@ -414,7 +420,9 @@ const en = {
       ship: { icon: '🟢', label: 'Citable' },
       fix: { icon: '🟡', label: 'Needs work' },
       block: { icon: '🔴', label: 'Blocked' },
-      shipDesc: 'Technical, structural, and authority signals are solid — a citable foundation is in place.',
+      shipDesc: 'Fetchable by AI and the total clears the bar, so a citable foundation is in place.',
+      shipDescWithGaps: dims => `Fetchable by AI and the total clears the bar, but ${dims} is weak and should be fixed first.`,
+      dimJoiner: ' and ',
       fixDesc: 'The page is fetchable, but key signals need work before it is reliably cited.',
       blockDesc: 'AI cannot currently fetch or cite this page — the block must be cleared first.',
       cappedNote: (raw, capped) => `(raw score ${raw}, capped to ${capped} by a veto)`,

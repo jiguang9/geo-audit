@@ -55,9 +55,9 @@ function statusIcon(score, max) {
 function renderRobots(robotsResult, L) {
   if (!robotsResult || robotsResult.error) return L.robotsError(robotsResult?.error || 'no result');
   if (!robotsResult.accessible) return L.robotsInaccessible(robotsResult.httpStatus || 'N/A');
-  const icon = { allowed: '✅', blocked: '❌', 'not-mentioned': '⚠️', unknown: '❓' };
+  const icon = { allowed: '✅', 'wildcard-allowed': '✅', blocked: '❌', 'not-mentioned': '⚠️', unknown: '❓' };
   const lines = robotsResult.crawlers.map(c =>
-    `  ${icon[c.result] || '❓'} ${c.name.padEnd(22)} ${c.result.padEnd(15)} ${c.platform}`
+    `  ${icon[c.result] || '❓'} ${c.name.padEnd(22)} ${(L.robotsStatus[c.result] || c.result).padEnd(15)} ${c.platform}`
   );
   return `robots.txt   ${robotsResult.url}\n${lines.join('\n')}`;
 }
@@ -112,11 +112,16 @@ function renderContentEvidence(contentResult, L) {
   return lines.length > 0 ? lines.join('\n') : null;
 }
 
-function renderVerdict(scoreData, V) {
+function renderVerdict(scoreData, V, dimLabels) {
   const state = V[scoreData.verdict] || V.fix;
+  // A passing total can hide a 🔴 dimension; name it instead of calling everything healthy
+  const weakDims = ['technical', 'structure', 'authority', 'presence']
+    .filter(k => statusIcon(scoreData.dimensions[k].raw, scoreData.dimensions[k].max) === '🔴')
+    .map(k => dimLabels[k]);
   const desc = scoreData.verdict === 'block' ? V.blockDesc
-    : scoreData.verdict === 'ship' ? V.shipDesc
-    : V.fixDesc;
+    : scoreData.verdict === 'fix' ? V.fixDesc
+    : weakDims.length > 0 ? V.shipDescWithGaps(weakDims.join(V.dimJoiner))
+    : V.shipDesc;
 
   let badge = `${V.header}: ${state.icon} ${state.label} — ${desc}`;
   if (scoreData.capped) {
@@ -467,6 +472,8 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     narrative = R.narrative.weakBoth(brand, techOk);
   } else if (!authOk) {
     narrative = R.narrative.weakAuthority(brand, structOk);
+  } else if (!structOk) {
+    narrative = R.narrative.weakStructure(brand);
   } else {
     narrative = R.narrative.weakPresence(brand);
   }
@@ -492,7 +499,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     '',
     R.conclusionHeader,
     '',
-    renderVerdict(scoreData, R.verdict),
+    renderVerdict(scoreData, R.verdict, R.dims),
     '',
     narrative,
     '',

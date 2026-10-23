@@ -42,8 +42,8 @@ User-agent: ClaudeBot
 Disallow: /
 `;
 
-test('parseCrawlerStatus — allowed when * allows all and bot not mentioned', () => {
-  assert.equal(parseCrawlerStatus(ALLOW_ALL, 'GPTBot'), 'not-mentioned');
+test('parseCrawlerStatus — wildcard-allowed when * allows all and bot not mentioned', () => {
+  assert.equal(parseCrawlerStatus(ALLOW_ALL, 'GPTBot'), 'wildcard-allowed');
 });
 
 test('parseCrawlerStatus — blocked when * blocks all and bot not mentioned (inherits global block)', () => {
@@ -54,8 +54,8 @@ test('parseCrawlerStatus — blocked when specific bot has Disallow: /', () => {
   assert.equal(parseCrawlerStatus(BLOCK_GPTBOT, 'GPTBot'), 'blocked');
 });
 
-test('parseCrawlerStatus — other bot not affected by GPTBot block', () => {
-  assert.equal(parseCrawlerStatus(BLOCK_GPTBOT, 'ClaudeBot'), 'not-mentioned');
+test('parseCrawlerStatus — other bot not affected by GPTBot block (falls back to * allow)', () => {
+  assert.equal(parseCrawlerStatus(BLOCK_GPTBOT, 'ClaudeBot'), 'wildcard-allowed');
 });
 
 test('parseCrawlerStatus — allowed when explicitly allowed', () => {
@@ -192,4 +192,27 @@ test('parseCrawlerStatus — root allowed even when deep path blocked', () => {
 
 test('parseCrawlerStatus — homepage allowed when only /private/ blocked', () => {
   assert.equal(parseCrawlerStatus(DEEP_BLOCK, 'GPTBot', '/'), 'allowed');
+});
+
+// ── Wildcard group vs. no group at all ──────────────────────────────────────
+
+const WILDCARD_WITH_PRIVATE_PATHS = `
+User-agent: *
+Content-Signal: search=yes, ai-input=yes
+Allow: /
+Disallow: /admin.html
+Disallow: /courses/
+`;
+
+test('parseCrawlerStatus — * group with only private-path disallows is wildcard-allowed for /', () => {
+  assert.equal(parseCrawlerStatus(WILDCARD_WITH_PRIVATE_PATHS, 'GPTBot', '/'), 'wildcard-allowed');
+  assert.equal(parseCrawlerStatus(WILDCARD_WITH_PRIVATE_PATHS, 'Bytespider', '/'), 'wildcard-allowed');
+});
+
+test('parseCrawlerStatus — * group disallowing the target path still blocks', () => {
+  assert.equal(parseCrawlerStatus(WILDCARD_WITH_PRIVATE_PATHS, 'GPTBot', '/courses/m01'), 'blocked');
+});
+
+test('parseCrawlerStatus — no * group and bot not named stays not-mentioned', () => {
+  assert.equal(parseCrawlerStatus(MIXED, 'Bingbot'), 'not-mentioned');
 });

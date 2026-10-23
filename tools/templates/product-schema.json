@@ -15,12 +15,5 @@
     "priceValidUntil": "{YYYY-MM-DD}",
     "availability": "https://schema.org/InStock",
     "url": "{https://example.com/product}"
-  },
-  "aggregateRating": {
-    "@type": "AggregateRating",
-    "ratingValue": "{4.8}",
-    "reviewCount": "{120}",
-    "bestRating": "5",
-    "worstRating": "1"
   }
 }
