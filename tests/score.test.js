@@ -122,6 +122,42 @@ test('scoreAuthority — homepage org schema still counts when article provided'
   assert.ok(s.breakdown.schemaAuthorityScore > 0, 'Org schema score from homepage');
 });
 
+test('scoreAuthority — several sampled articles are scored by share, not by one page', () => {
+  const withAll = { ...bareSchema, authorDate: { hasAuthor: true, hasPublishDate: false, hasModifiedDate: true } };
+  // Two articles with author + modified date, one with neither (the /news/fadada case)
+  const s = scoreAuthority(bareSchema, {}, [withAll, withAll, bareSchema]);
+  assert.equal(s.breakdown.authorScore, 4, '2/3 of 6');
+  assert.equal(s.breakdown.freshnessScore, 2, '0/3 publish + 2/3 of 3 modified');
+  assert.deepEqual(s.articleSignals, { checked: 3, withAuthor: 2, withPublishDate: 0, withModifiedDate: 2 });
+  assert.equal(s.articleChecked, true);
+
+  // Swapping one article for a bare one moves the score by a share, not by the full 12 points
+  const allGood = scoreAuthority(bareSchema, {}, [withAll, withAll, withAll]);
+  const oneBare = scoreAuthority(bareSchema, {}, [withAll, withAll, bareSchema]);
+  const single = scoreAuthority(bareSchema, {}, withAll).raw - scoreAuthority(bareSchema, {}, bareSchema).raw;
+  assert.ok(allGood.raw - oneBare.raw < single, `${allGood.raw - oneBare.raw} should be < ${single}`);
+});
+
+test('scoreAuthority — failed article fetches are skipped, not counted as missing signals', () => {
+  const s = scoreAuthority(bareSchema, {}, [goodSchema, { error: 'HTTP 404' }]);
+  assert.equal(s.articleSignals.checked, 1);
+  assert.equal(s.breakdown.authorScore, 6);
+});
+
+test('scoreAuthority — all article fetches failed falls back to homepage', () => {
+  const s = scoreAuthority(goodSchema, {}, [{ error: 'timeout' }]);
+  assert.equal(s.articleChecked, false);
+  assert.equal(s.confidence, 'low');
+  assert.equal(s.breakdown.authorScore, 6, 'homepage author signal used');
+});
+
+test('computeGeoScore — accepts articleSchemaResults array', () => {
+  const base = { robotsResult: null, llmsResult: null, schemaResult: bareSchema, contentResult: null, presenceEvidence: {} };
+  const r = computeGeoScore({ ...base, articleSchemaResults: [goodSchema, bareSchema] });
+  assert.equal(r.dimensions.authority.articleSignals.checked, 2);
+  assert.equal(r.dimensions.authority.breakdown.authorScore, 3);
+});
+
 // scorePresence tests
 test('scorePresence — no evidence returns unknown', () => {
   const s = scorePresence({});

@@ -477,3 +477,44 @@ test('renderCitationMatrix — cited but not named shows as cited-only, not abse
   const report = lowScoreReport([{ query: 'Q', platform: 'ChatGPT', brandMentioned: false, officialUrlCited: true, competitorsCited: [] }]);
   assert.ok(report.includes('| Q | 🔗 仅被引 |'));
 });
+
+// Article sampling evidence
+const articleWith = { ...goodSchema, authorDate: { hasAuthor: true, hasPublishDate: true, hasModifiedDate: true } };
+const articleBare = { ...goodSchema, schema: { found: [], missing: [] }, authorDate: { hasAuthor: false, hasPublishDate: false, hasModifiedDate: false } };
+const articleSamples = [
+  { url: 'https://example.com/article/1', result: articleWith },
+  { url: 'https://example.com/news/2', result: articleBare },
+  { url: 'https://example.com/blog/3', result: { error: 'HTTP 404' } },
+];
+
+test('renderReport — lists every sampled article with its author and date signals', () => {
+  const score = makeScore();
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, sitemapResult: foundSitemap, articleSamples, context });
+  assert.ok(report.includes('文章页抽样 3 篇'), 'header names the sample size');
+  assert.ok(report.includes('作者 1/2，发布日期 1/2，修改日期 1/2'), 'header sums signals over fetched articles');
+  assert.ok(/article\/1 {2}✅ 有作者 {2}✅ 有发布日期 {2}✅ 有修改日期/.test(report), 'first article line');
+  assert.ok(/news\/2 {2}❌ 无作者 {2}❌ 无发布日期 {2}❌ 无修改日期 {2}Schema: 无 schema/.test(report), 'second article line');
+  assert.ok(report.includes('blog/3  ⚠️ 抓取失败（HTTP 404），不计分'), 'failed article is named');
+});
+
+test('renderReport — warns when child sitemaps failed to load', () => {
+  const score = makeScore();
+  const sitemapResult = {
+    ...foundSitemap,
+    subSitemaps: { total: 5, tried: 3, read: 2, failed: [{ url: 'https://example.com/content/sitemap1.xml', reason: 'timeout' }] },
+  };
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, sitemapResult, articleSamples, context });
+  assert.ok(report.includes('⚠️ 子 sitemap 读取失败 1/3（索引共 5 个，只读前 3 个）'), 'counts failed / tried / total');
+  assert.ok(report.includes('https://example.com/content/sitemap1.xml（timeout）'), 'names the failed sitemap and reason');
+
+  const en = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, sitemapResult, articleSamples, context, lang: 'en' });
+  assert.ok(en.includes('Child sitemaps that failed to load: 1/3'), 'English warning');
+  assert.ok(en.includes('Article pages sampled: 3'), 'English sample header');
+});
+
+test('renderReport — no sitemap warning when every child sitemap loaded', () => {
+  const score = makeScore();
+  const sitemapResult = { ...foundSitemap, subSitemaps: { total: 2, tried: 2, read: 2, failed: [] } };
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, sitemapResult, articleSamples, context });
+  assert.ok(!report.includes('子 sitemap 读取失败'));
+});

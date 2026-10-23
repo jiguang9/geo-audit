@@ -2,7 +2,7 @@
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
-const { parseArgs } = require('../tools/audit.js');
+const { parseArgs, pickArticleUrls, inspectArticleSamples } = require('../tools/audit.js');
 
 // parseArgs receives process.argv, so we prepend two dummy entries (node + script)
 function args(...a) { return ['node', 'audit.js', ...a]; }
@@ -37,4 +37,28 @@ test('parseArgs — format defaults to markdown when --json absent', () => {
 test('parseArgs — format is json when --json present', () => {
   const r = parseArgs(args('https://example.com', '--json'));
   assert.equal(r.format, 'json');
+});
+
+test('pickArticleUrls — uses the spread article sample from the sitemap', () => {
+  const urls = pickArticleUrls({
+    found: true,
+    sampleUrls: ['https://example.com/about', 'https://example.com/news/b'],
+    articleSampleUrls: ['https://example.com/news/a', 'https://example.com/news/b', 'https://example.com/news/c'],
+  });
+  assert.deepEqual(urls, ['https://example.com/news/a', 'https://example.com/news/b', 'https://example.com/news/c']);
+});
+
+test('pickArticleUrls — no sitemap, no articles; private URLs dropped', () => {
+  assert.deepEqual(pickArticleUrls({ found: false }), []);
+  assert.deepEqual(pickArticleUrls({ found: true, articleSampleUrls: ['http://localhost/blog/x'] }), []);
+});
+
+test('inspectArticleSamples — keeps a thrown fetch as an error entry', async () => {
+  const samples = await inspectArticleSamples(['https://example.com/a', 'https://example.com/b'], async u => {
+    if (u.endsWith('/b')) throw new Error('socket hang up');
+    return { url: u, authorDate: { hasAuthor: true } };
+  });
+  assert.equal(samples.length, 2);
+  assert.equal(samples[0].result.authorDate.hasAuthor, true);
+  assert.deepEqual(samples[1], { url: 'https://example.com/b', result: { error: 'socket hang up' } });
 });

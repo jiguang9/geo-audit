@@ -2,6 +2,7 @@
 
 const STRINGS = require('./report-strings.js');
 const { computeTrend } = require('./history.js');
+const { summarizeArticleSignals } = require('./score.js');
 
 function deltaLabel(delta) {
   if (delta === null || delta === undefined) return '—';
@@ -474,7 +475,35 @@ function buildMonitoringQueries(context, L) {
   return [...base, ...extra];
 }
 
-function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSchemaResult, articleUrl, context, url: auditUrl, lang, previousAudit }) {
+function renderArticleEvidence(samples, sitemapResult, E) {
+  const lines = [];
+  if (samples.length > 0) {
+    lines.push(E.sampleHeader(samples.length, summarizeArticleSignals(samples.map(a => a.result))));
+    for (const { url, result } of samples) {
+      if (!result || result.error) {
+        lines.push(`- ${url}  ${E.fetchFailed((result && result.error) || 'error')}`);
+        continue;
+      }
+      const ad = result.authorDate || {};
+      const sc = result.schema || {};
+      const found = [
+        ad.hasAuthor ? E.hasAuthor : E.noAuthor,
+        ad.hasPublishDate ? E.hasDate : E.noDate,
+        ad.hasModifiedDate ? E.hasModified : E.noModified,
+      ];
+      const schemas = sc.found && sc.found.length ? sc.found.join(', ') : E.noSchema;
+      lines.push(`- ${url}  ${found.join('  ')}  Schema: ${schemas}`);
+    }
+  }
+  const sm = sitemapResult && sitemapResult.subSitemaps;
+  if (sm && sm.failed && sm.failed.length > 0) {
+    if (lines.length) lines.push('');
+    lines.push(E.subSitemapFailed(sm));
+  }
+  return lines;
+}
+
+function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSamples, articleSchemaResult, articleUrl, context, url: auditUrl, lang, previousAudit }) {
   const locale = (lang || context?.lang || 'zh').toLowerCase();
   const L = STRINGS[locale] || STRINGS.zh;
   const R = L.report;
@@ -519,19 +548,13 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     narrative = R.narrative.weakPresence(brand);
   }
 
-  // Article page authority evidence line
-  const articleEvidenceLine = (() => {
-    if (!articleSchemaResult || articleSchemaResult.error) return null;
-    const E = R.articleEvidence;
-    const ad = articleSchemaResult.authorDate || {};
-    const sc = articleSchemaResult.schema || {};
-    const found = [];
-    found.push(ad.hasAuthor ? E.hasAuthor : E.noAuthor);
-    found.push(ad.hasPublishDate ? E.hasDate : E.noDate);
-    if (ad.hasModifiedDate) found.push(E.hasModified);
-    const schemas = sc.found && sc.found.length ? sc.found.join(', ') : E.noSchema;
-    return `${E.pageLabel} (${articleUrl})  ${found.join('  ')}  Schema: ${schemas}`;
-  })();
+  // Article page authority evidence: one line per sampled article, plus a
+  // warning when child sitemaps failed (the sample then depends on the run).
+  const articleEvidenceLines = renderArticleEvidence(
+    articleSamples || (articleSchemaResult ? [{ url: articleUrl, result: articleSchemaResult }] : []),
+    sitemapResult,
+    R.articleEvidence,
+  );
 
   const measured = renderMeasured(scoreData, citationEvidence, L);
   const lines = [
@@ -570,8 +593,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     renderLlms(llmsResult, L),
     '',
     renderSchema(schemaResult, L),
-    articleEvidenceLine ? '' : null,
-    articleEvidenceLine,
+    ...(articleEvidenceLines.length ? ['', ...articleEvidenceLines] : []),
     '',
   );
 

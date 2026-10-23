@@ -36,7 +36,7 @@ npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 
 ![geo-audit 诊断报告首屏：aimarketinglift.com，2026-09-03，Level 3，已知部分 45/75](docs/images/geo-audit-report-2026-09-03.png)
 
-> 这张图是 agent 排版的 HTML 版。直接在命令行运行 `tools/audit.js`，输出的是 Markdown 报告，默认只查首页和一篇文章页。工具页、/about 这类页面的抽查由 agent 按 skill 流程补做。
+> 这张图是 agent 排版的 HTML 版。直接在命令行运行 `tools/audit.js`，输出的是 Markdown 报告，默认查首页，再从 sitemap 里分散抽 3 篇文章页，作者和日期按篇数比例计分。工具页、/about 这类页面的抽查由 agent 按 skill 流程补做。
 
 这次诊断的结论：
 

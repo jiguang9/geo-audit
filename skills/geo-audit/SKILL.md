@@ -210,7 +210,7 @@ Write the report directly in the conversation — do not reproduce the raw tool 
 - `/sitemap.xml` — [共 N 个页面，M 篇博客，最近更新 YYYY-MM-DD]
 - `/`（首页）— [发现哪些 schema，缺哪些，是否有 canonical]
 - `/{about-page}` — [抽查结果：有无 Person/Organization schema]
-- `/{blog-post}` — [抽查结果：有无 BlogPosting/Article、作者、日期]
+- `/{blog-post}` — [audit.js 抽的 3 篇文章各自有无 BlogPosting/Article、作者、日期；报告提示子 sitemap 读取失败时照抄这条提示]
 - `/{tool-or-product-page}` — [抽查结果：有无 WebApplication/Product schema]
 
 ### P0：本周做

@@ -15,7 +15,7 @@ const { checkRobots } = require('./robots-checker.js');
 const { checkLlmsTxt } = require('./llms-txt-checker.js');
 const { inspectSchema } = require('./schema-inspector.js');
 const { checkContentStructure } = require('./content-structure.js');
-const { checkSitemap } = require('./sitemap-checker.js');
+const { checkSitemap, ARTICLE_RE } = require('./sitemap-checker.js');
 const { computeGeoScore } = require('./score.js');
 const { renderReport } = require('./report.js');
 const { saveHistory, loadLatestHistory } = require('./history.js');
@@ -107,6 +107,28 @@ function loadContext(startDir) {
   return null;
 }
 
+// Article URLs to inspect: the spread sample from the sitemap, or (older
+// sitemap results) the first article-like URL among sampleUrls.
+function pickArticleUrls(sitemapResult) {
+  if (!sitemapResult || !sitemapResult.found) return [];
+  const urls = sitemapResult.articleSampleUrls && sitemapResult.articleSampleUrls.length
+    ? sitemapResult.articleSampleUrls
+    : (sitemapResult.sampleUrls || []).filter(u => ARTICLE_RE.test(u)).slice(0, 1);
+  return urls.filter(u => isPublicUrl(u));
+}
+
+// Inspect each article; a failed fetch stays in the list as { error } so the
+// report can name it, and scoring skips it.
+async function inspectArticleSamples(urls, inspect = inspectSchema) {
+  return Promise.all(urls.map(async u => {
+    try {
+      return { url: u, result: await inspect(u) };
+    } catch (err) {
+      return { url: u, result: { error: err.message || 'fetch failed' } };
+    }
+  }));
+}
+
 async function runAudit(siteUrl, context) {
   if (!isPublicUrl(siteUrl)) {
     throw new Error('URL must be a publicly accessible site (no localhost, private IPs, or .internal domains).');
@@ -122,23 +144,16 @@ async function runAudit(siteUrl, context) {
     checkContentStructure(url),
   ]);
 
-  // Auto-check one article page for authority signals (author, dates)
-  // These signals are article-level, not homepage-level
-  let articleSchemaResult = null;
-  let articleUrl = null;
+  // Auto-check several article pages for authority signals (author, dates).
+  // These signals are article-level, not homepage-level. Sampling articles spread
+  // across the sitemap keeps one page from deciding the score.
   let sitemapResult = { found: false };
+  let articleSamples = [];
   try {
     sitemapResult = await checkSitemap(url);
-    if (sitemapResult.found && sitemapResult.sampleUrls) {
-      const candidate = sitemapResult.sampleUrls.find(u =>
-        /\/blog\/|\/post\/|\/article\/|\/news\//.test(u)
-      );
-      if (candidate && isPublicUrl(candidate)) {
-        articleUrl = candidate;
-        articleSchemaResult = await inspectSchema(candidate);
-      }
-    }
-  } catch (_) { /* sitemap or article fetch failed — proceed without */ }
+    articleSamples = await inspectArticleSamples(pickArticleUrls(sitemapResult));
+  } catch (_) { /* sitemap fetch failed — proceed without */ }
+  const articleSchemaResults = articleSamples.map(a => a.result);
 
   // Third-party presence: user-provided evidence (structured object or JSON string)
   let presenceEvidence = {};
@@ -162,9 +177,9 @@ async function runAudit(siteUrl, context) {
     }
   }
 
-  const scoreData = computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult });
+  const scoreData = computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResults });
 
-  return { url, scoreData, robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSchemaResult, articleUrl, context };
+  return { url, scoreData, robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, citationEvidence, sitemapResult, articleSamples, context };
 }
 
 async function main() {
@@ -236,4 +251,4 @@ if (require.main === module) {
   main();
 }
 
-module.exports = { runAudit, loadContext, parseArgs };
+module.exports = { runAudit, loadContext, parseArgs, pickArticleUrls, inspectArticleSamples };

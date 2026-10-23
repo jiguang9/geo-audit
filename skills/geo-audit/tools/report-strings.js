@@ -205,8 +205,11 @@ const zh = {
     articleEvidence: {
       hasAuthor: '✅ 有作者', noAuthor: '❌ 无作者',
       hasDate: '✅ 有发布日期', noDate: '❌ 无发布日期',
-      hasModified: '✅ 有修改日期', noSchema: '无 schema',
+      hasModified: '✅ 有修改日期', noModified: '❌ 无修改日期', noSchema: '无 schema',
       pageLabel: '文章页',
+      sampleHeader: (n, s) => `文章页抽样 ${n} 篇（作者和日期按篇数比例计分）：作者 ${s.withAuthor}/${s.checked}，发布日期 ${s.withPublishDate}/${s.checked}，修改日期 ${s.withModifiedDate}/${s.checked}`,
+      fetchFailed: reason => `⚠️ 抓取失败（${reason}），不计分`,
+      subSitemapFailed: sm => `⚠️ 子 sitemap 读取失败 ${sm.failed.length}/${sm.tried}${sm.total > sm.tried ? `（索引共 ${sm.total} 个，只读前 ${sm.tried} 个）` : ''}：${sm.failed.map(f => `${f.url}（${f.reason}）`).join('、')}。文章只从读到的子 sitemap 里抽，再跑一次抽到的文章和分数可能不同。`,
     },
     narrative: {
       techBlocked: brand => `${brand} 当前 AI 可见性的首要障碍是技术层面：爬虫访问受限或关键机器可读文件缺失，在解决技术问题前，其他优化效果有限。`,
@@ -433,8 +436,11 @@ const en = {
     articleEvidence: {
       hasAuthor: '✅ author', noAuthor: '❌ no author',
       hasDate: '✅ publish date', noDate: '❌ no publish date',
-      hasModified: '✅ modified date', noSchema: 'no schema',
+      hasModified: '✅ modified date', noModified: '❌ no modified date', noSchema: 'no schema',
       pageLabel: 'Article page',
+      sampleHeader: (n, s) => `Article pages sampled: ${n} (author and dates scored by share of articles): author ${s.withAuthor}/${s.checked}, publish date ${s.withPublishDate}/${s.checked}, modified date ${s.withModifiedDate}/${s.checked}`,
+      fetchFailed: reason => `⚠️ fetch failed (${reason}), not scored`,
+      subSitemapFailed: sm => `⚠️ Child sitemaps that failed to load: ${sm.failed.length}/${sm.tried}${sm.total > sm.tried ? ` (index lists ${sm.total}, only the first ${sm.tried} are read)` : ''}: ${sm.failed.map(f => `${f.url} (${f.reason})`).join(', ')}. Articles are sampled only from the sitemaps that loaded, so another run may sample different articles and score differently.`,
     },
     narrative: {
       techBlocked: brand => `${brand}'s primary AI-visibility blocker is technical: crawler access is restricted or key machine-readable files are missing. Until that is fixed, other optimizations will have limited effect.`,

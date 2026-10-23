@@ -53,7 +53,23 @@ function scoreStructure(schemaResult, contentResult) {
   };
 }
 
-function scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult) {
+// Count author/date signals across the sampled article pages. Accepts one
+// inspectSchema result or an array; failed fetches are left out.
+function summarizeArticleSignals(articleSchemaResults) {
+  const list = Array.isArray(articleSchemaResults)
+    ? articleSchemaResults
+    : (articleSchemaResults ? [articleSchemaResults] : []);
+  const ok = list.filter(r => r && !r.error);
+  const count = key => ok.filter(r => r.authorDate && r.authorDate[key]).length;
+  return {
+    checked: ok.length,
+    withAuthor: count('hasAuthor'),
+    withPublishDate: count('hasPublishDate'),
+    withModifiedDate: count('hasModifiedDate'),
+  };
+}
+
+function scoreAuthority(schemaResult, presenceEvidence, articleSchemaResults) {
   if (!schemaResult || schemaResult.error) return { raw: 0, max: 25, breakdown: {}, skipped: true };
 
   // Homepage signals: org schema, external links (representative of the brand)
@@ -66,29 +82,32 @@ function scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult) {
   const schemaAuthorityScore = Math.min(5, s.found ? s.found.filter(t => authoritySchemas.includes(t)).length * 2 : 0);
 
   // Article-level signals: author and date are meaningful on article/blog pages,
-  // not on marketing homepages. Use articleSchemaResult when available.
-  const adSource = (articleSchemaResult && !articleSchemaResult.error)
-    ? articleSchemaResult
-    : schemaResult;
-  const ad = adSource.authorDate || {};
+  // not on marketing homepages. With several sampled articles each signal earns
+  // points in proportion to the share of articles that carry it, so no single
+  // article decides the score. Without any article, fall back to the homepage.
+  const articleSignals = summarizeArticleSignals(articleSchemaResults);
+  const signals = articleSignals.checked > 0
+    ? articleSignals
+    : summarizeArticleSignals(schemaResult);
+  const share = n => (signals.checked > 0 ? n / signals.checked : 0);
 
   // Author attribution (0-6)
-  const authorScore = ad.hasAuthor ? 6 : 0;
+  const authorScore = Math.round(6 * share(signals.withAuthor));
 
   // Freshness (0-6)
-  let freshnessScore = 0;
-  if (ad.hasPublishDate) freshnessScore += 3;
-  if (ad.hasModifiedDate) freshnessScore += 3;
+  const freshnessScore = Math.round(3 * share(signals.withPublishDate)) + Math.round(3 * share(signals.withModifiedDate));
 
   // Original research / statistics from presence evidence (0-5, user-provided)
   const researchScore = presenceEvidence && presenceEvidence.hasOriginalResearch ? 5 : 0;
 
   const raw = Math.min(25, citationScore + authorScore + freshnessScore + schemaAuthorityScore + researchScore);
+  const articleChecked = articleSignals.checked > 0;
   return {
     raw,
     max: 25,
-    confidence: articleSchemaResult && !articleSchemaResult.error ? 'medium' : 'low',
-    articleChecked: !!(articleSchemaResult && !articleSchemaResult.error),
+    confidence: articleChecked ? 'medium' : 'low',
+    articleChecked,
+    articleSignals,
     breakdown: { citationScore, authorScore, freshnessScore, schemaAuthorityScore, researchScore },
   };
 }
@@ -187,9 +206,9 @@ function computeVetoes(robotsResult, schemaResult) {
   return vetoes;
 }
 
-function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResult }) {
+function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult, presenceEvidence, articleSchemaResults, articleSchemaResult }) {
   const structure = scoreStructure(schemaResult, contentResult);
-  const authority = scoreAuthority(schemaResult, presenceEvidence, articleSchemaResult);
+  const authority = scoreAuthority(schemaResult, presenceEvidence, articleSchemaResults || articleSchemaResult);
   const presence = scorePresence(presenceEvidence);
   const technical = scoreTechnical(robotsResult, llmsResult, schemaResult);
 
@@ -245,4 +264,4 @@ function computeGeoScore({ robotsResult, llmsResult, schemaResult, contentResult
   };
 }
 
-module.exports = { computeGeoScore, computeVetoes, scoreStructure, scoreAuthority, scorePresence, scoreTechnical };
+module.exports = { computeGeoScore, computeVetoes, scoreStructure, scoreAuthority, scorePresence, scoreTechnical, summarizeArticleSignals };
