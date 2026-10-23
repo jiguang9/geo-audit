@@ -153,6 +153,12 @@ presence: {"hasWikipedia": false, "hasBaiduBaike": false, "hasZhihu": true, "rev
 citationEvidence: [{"query": "最好的 X 工具", "platform": "ChatGPT", "brandMentioned": true, "officialUrlCited": false, "competitorsCited": ["CompA"]}, {"query": "最好的 X 工具", "platform": "豆包", "brandMentioned": false, "officialUrlCited": false, "competitorsCited": []}]
 ```
 
+这一行不用手写：用 [geo-judge](https://github.com/jiguang9/geo-judge)（GEO 可见度判定助手）把各个 AI 的回答粘进去判定，导出 CSV 后用它自带的脚本一键转成这个格式：
+
+```bash
+node tools/to-citation-evidence.js geo_judge_results.csv --context
+```
+
 </details>
 
 <details>
@@ -214,10 +220,11 @@ npm test
 - 每项检查最多发一次请求，不爬站
 - 第三方平台的存在感由你提供证据，不去爬竞品或评测网站
 
-## 同系列 Skill
+## 同系列 Skill 与工具
 
 | Skill | 做什么 |
 |-------|--------|
+| [geo-judge](https://github.com/jiguang9/geo-judge) | GEO 可见度判定助手：把 AI 的回答粘进来，看品牌有没有被提到、排第几、有没有被引用，结果能直接转成上面的引用实测数据 |
 | [google-seo-audit](https://github.com/jiguang9/google-seo-audit) | Google SEO 九个维度体检，含 Core Web Vitals 和 Search Console 数据 |
 | [competitor-analysis](https://github.com/jiguang9/competitor-analysis) | 有证据的竞品分析、口碑分析和竞品内容拆解 |
 | [industry-research](https://github.com/jiguang9/industry-research) | 快速摸清一个陌生行业的结构、商业模式和竞争格局 |

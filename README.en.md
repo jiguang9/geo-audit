@@ -207,6 +207,11 @@ presence: {"hasWikipedia": false, "hasBaiduBaike": false, "hasZhihu": true, "rev
 citationEvidence: [{"query": "best X tool", "platform": "ChatGPT", "brandMentioned": true, "officialUrlCited": false, "competitorsCited": ["CompA"]}, {"query": "best X tool", "platform": "Perplexity", "brandMentioned": false, "officialUrlCited": false, "competitorsCited": []}]
 ```
 
+You don't have to write this by hand: judge real AI answers with
+[geo-judge](https://github.com/jiguang9/geo-judge) (a single-file, local-only
+visibility judge, Chinese UI), export its CSV, and convert it with
+`node tools/to-citation-evidence.js geo_judge_results.csv --context`.
+
 ### JSON format
 
 Alternatively, use `.agents/geo-audit-context.json` with the same keys as a JSON object.
