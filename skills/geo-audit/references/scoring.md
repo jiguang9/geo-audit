@@ -128,6 +128,23 @@ The verdict is derived only from dimension scores and tool results that
 `score.js` already receives, so it does not depend on report-layer diagnostics.
 It renders as a badge at the top of the report, above the narrative and score table.
 
+### Measured results next to the score
+
+When `citationEvidence` is provided, the overview adds a **实测 / Measured** block
+right after the narrative: brand mention rate, official-site citation rate, and
+citations per platform. It then flags disagreements instead of letting the score
+speak alone (platforms with fewer than 3 tests are ignored for these checks):
+
+| Note | Condition |
+|------|-----------|
+| Cited but low score | Some platform cites the official site in ≥ 50% of its tests while the normalised score is ≤ 40 |
+| High score but rarely cited | Normalised score ≥ 61 while ≤ 20% of all tests cite the official site |
+| Mentioned, not cited | A platform names the brand in ≥ 50% of its tests but never cites the official site |
+| Platform gap | One platform cites in ≥ 50% of tests and another never does |
+| Small sample | Fewer than 5 tests in total |
+
+The verdict itself stays score-derived; the measured block sits beside it.
+
 ---
 
 ## Score Interpretation Notes

@@ -49,6 +49,7 @@ The Markdown report includes:
 - **GEO 得分** — 4-dimension score with confidence symbols (●/◐/○)
 - **关键技术证据** — robots.txt, llms.txt, Schema types found/missing, Schema attribute gaps (`Organization.sameAs`, `Article.dateModified`, etc.), article-page author/date signals, quotable content blocks and missing block types
 - **引用证据矩阵** — query × platform matrix when `citationEvidence` is in context
+- **实测对照** — with `citationEvidence`, the overview adds measured mention / citation rates per platform and flags mismatches with the score (`renderMeasured` in `tools/report.js`)
 - **第三方存在感验证** — search links for manual brand presence checks (shown when presence is unknown)
 - **引用失败诊断** — auto-diagnosed failure codes (T-ACCESS / T-INDEX / C-MATCH / C-ANSWER / A-AUTH / A-FRESH / P-ABSENCE) with specific fix guidance
 - **P0 / P1 / P2 actions** — prioritised fixes with copy-paste code snippets

@@ -137,6 +137,7 @@ Each audit produces a Markdown report with:
 
 - **总裁决 / Verdict** — top-line 🟢 Citable / 🟡 Needs work / 🔴 Blocked gate; a hard veto (e.g. AI crawlers blocked, `V-ACCESS`) caps the score at level 2 and shows the uncapped raw score
 - **GEO Score** — 4-dimension score (0–100) with confidence indicators
+- **Measured vs. score** — when `citationEvidence` is provided, the overview lists measured mention and official-site citation rates per platform and calls out any mismatch with the score
 - **关键技术证据** — robots.txt crawler access, llms.txt status, Schema markup found/missing, article-page authority signals, quotable content blocks
 - **Schema 缺失属性** — attribute-level gaps beyond type-level (e.g. `Organization.sameAs`, `Article.dateModified`, `Product.offers`)
 - **引用失败诊断** — auto-diagnosed failure codes (T-ACCESS / T-INDEX / C-MATCH / C-ANSWER / A-AUTH / A-FRESH / P-ABSENCE) with per-code fix guidance

@@ -139,10 +139,24 @@ const zh = {
     queryPlatform: '查询 / 平台',
     citedWithLink: '✅ 引用+链接',
     mentioned: '⚠️ 提及',
+    citedOnly: '🔗 仅被引',
     absent: '❌ 未出现',
     competitorHeader: '**竞品被引用情况**',
     competitorLine: (platform, query, names) => `- ${platform} / "${query}"：${names} 被引用`,
     nameJoiner: '、',
+  },
+
+  measured: {
+    line: (n, m, mp, c, cp) => `**实测**：${n} 条测试里，品牌在正文被提到 ${m} 条（${mp}%），官网被引用 ${c} 条（${cp}%）。`,
+    byPlatform: s => `按平台看官网被引用：${s}。`,
+    platformCell: (p, c, n) => `${p} ${c}/${n}`,
+    joiner: '，',
+    citedButLowScore: (p, c, n) => `⚠️ **实测和诊断对不上**：${p} 在 ${n} 条测试里引用了官网 ${c} 次，诊断分却偏低。诊断只看页面条件，品牌在站外的影响力、AI 从哪里拿到内容，它都看不到；下面的 P0 补的是页面短板，不代表现在没被引用。`,
+    rarelyCitedButHighScore: '⚠️ **实测和诊断对不上**：诊断分达标，但实测里官网很少被引用。页面条件已经够了，问题多半在站外存在感，或者测的问题和你的内容对不上，优先看 P2 和推荐监控。',
+    mentionedNotCited: ps => `${ps} 常在正文提到品牌，却没有引用官网：AI 主要是从官网以外的来源知道你的，看下面引用矩阵里的竞品和来源。`,
+    platformGap: '各平台差别很大，一个诊断分解释不了，按平台看下面的引用矩阵。',
+    consistent: '实测和诊断分没有明显矛盾。',
+    smallSample: n => `样本只有 ${n} 条，结论只作参考，建议每个平台至少测 5 条。`,
   },
 
   presencePlan: {
@@ -353,10 +367,24 @@ const en = {
     queryPlatform: 'Query / Platform',
     citedWithLink: '✅ Cited + linked',
     mentioned: '⚠️ Mentioned',
+    citedOnly: '🔗 Cited only',
     absent: '❌ Absent',
     competitorHeader: '**Competitor citations**',
     competitorLine: (platform, query, names) => `- ${platform} / "${query}": ${names} cited`,
     nameJoiner: ', ',
+  },
+
+  measured: {
+    line: (n, m, mp, c, cp) => `**Measured**: across ${n} tests, the brand was named in the answer ${m} times (${mp}%) and the official site was cited ${c} times (${cp}%).`,
+    byPlatform: s => `Official-site citations by platform: ${s}.`,
+    platformCell: (p, c, n) => `${p} ${c}/${n}`,
+    joiner: ', ',
+    citedButLowScore: (p, c, n) => `⚠️ **Measured results and the score disagree**: ${p} cited the official site ${c} times in ${n} tests, yet the score is low. The audit only sees on-page conditions, not the brand's off-site reach or where AI actually gets its content; the P0 fixes below close page gaps and do not mean the site is uncited today.`,
+    rarelyCitedButHighScore: '⚠️ **Measured results and the score disagree**: the score clears the bar, but the official site is rarely cited in the tests. Page conditions are in place; the gap is likely third-party presence, or the test queries do not match your content. Start with P2 and the monitoring queries.',
+    mentionedNotCited: ps => `${ps} often name the brand but never cite the official site: AI knows you mainly from sources other than your site. Check competitors and sources in the matrix below.`,
+    platformGap: 'Platforms differ sharply; a single score cannot explain that. Read the matrix below per platform.',
+    consistent: 'Measured results and the score do not contradict each other.',
+    smallSample: n => `Only ${n} tests, so treat this as indicative; test at least 5 queries per platform.`,
   },
 
   presencePlan: {

@@ -50,6 +50,7 @@ npx skills add https://github.com/jiguang9/geo-audit --skill geo-audit
 
 - **总裁决**：🟢 可引用 / 🟡 需修复 / 🔴 被阻断。AI 爬虫被挡住时直接封顶，并显示封顶前的原始分
 - **GEO 得分**：四个维度，每个都标置信度
+- **实测对照**（填了引用实测结果时）：在总体结论里并列实测的品牌提及率、官网被引用率和各平台情况；诊断分和实测对不上时明确提示，不让分数单独下结论
 - **关键技术证据**：robots.txt 里 10 个 AI 爬虫的放行情况、llms.txt、Schema 类型和缺失属性、文章页作者和日期、AI 最可能截取的句子
 - **引用失败诊断**：自动判断属于哪一类引用障碍，每类给对应修法
 - **P0 / P1 / P2 行动清单**：按本周、本月、持续排好优先级，附可复制的代码模板
@@ -147,7 +148,7 @@ competitors: CompetitorA, CompetitorB
 presence: {"hasWikipedia": false, "hasBaiduBaike": false, "hasZhihu": true, "reviewPlatformCount": 2, "mediaMentionCount": 5, "socialPlatformCount": 3}
 ```
 
-**引用实测结果**（填了会出"查询 × 平台"引用矩阵）：
+**引用实测结果**（填了会出"查询 × 平台"引用矩阵，总体结论里也会并列实测被引用率；诊断分和实测对不上时会明确提示）：
 
 ```markdown
 citationEvidence: [{"query": "最好的 X 工具", "platform": "ChatGPT", "brandMentioned": true, "officialUrlCited": false, "competitorsCited": ["CompA"]}, {"query": "最好的 X 工具", "platform": "豆包", "brandMentioned": false, "officialUrlCited": false, "competitorsCited": []}]

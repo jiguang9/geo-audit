@@ -421,3 +421,59 @@ test('renderReport — wildcard-allowed crawlers render as ✅ with a label', ()
   const en = renderReport(score, { robotsResult: robots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, context, lang: 'en' });
   assert.ok(/✅ GPTBot\s+allowed via \*/.test(en), 'en should show ✅ allowed via *');
 });
+
+// ── Measured citations next to the score ────────────────────────────────────
+
+const ev = (platform, n, mentioned, cited) => [...Array(n)].map((_, i) => ({
+  query: `问题 ${i + 1}`, platform, brandMentioned: i < mentioned, officialUrlCited: i < cited, competitorsCited: [],
+}));
+const normalised = s => Math.round((s.total / s.totalMax) * 100);
+const lowLlms = { 'llms.txt': { exists: false }, 'llms-full.txt': { exists: false } };
+
+function lowScoreReport(citationEvidence) {
+  const score = computeGeoScore({ robotsResult: goodRobots, llmsResult: lowLlms, schemaResult: bareSchema, contentResult: null, presenceEvidence: {} });
+  assert.ok(normalised(score) <= 40, `fixture should score low, got ${normalised(score)}`);
+  return renderReport(score, { robotsResult: goodRobots, llmsResult: lowLlms, schemaResult: bareSchema, contentResult: null, presenceEvidence: {}, citationEvidence, context });
+}
+
+test('renderReport — low score but one platform cites the site often: flags the mismatch', () => {
+  // shaped like the Feishu test: ChatGPT cites 7/9, Doubao 3/9, DeepSeek names the brand but never cites
+  const report = lowScoreReport([...ev('ChatGPT', 9, 9, 7), ...ev('豆包', 9, 7, 3), ...ev('DeepSeek', 9, 7, 0)]);
+  const overview = report.slice(report.indexOf('### 总体结论'), report.indexOf('### GEO 得分'));
+  assert.ok(overview.includes('**实测**：27 条测试里，品牌在正文被提到 23 条（85%），官网被引用 10 条（37%）'), overview);
+  assert.ok(overview.includes('按平台看官网被引用：ChatGPT 7/9，豆包 3/9，DeepSeek 0/9'));
+  assert.ok(overview.includes('ChatGPT 在 9 条测试里引用了官网 7 次，诊断分却偏低'));
+  assert.ok(overview.includes('DeepSeek 常在正文提到品牌，却没有引用官网'));
+  assert.ok(overview.includes('各平台差别很大'));
+  assert.ok(!overview.includes('没有明显矛盾'));
+});
+
+test('renderReport — high score but the site is rarely cited: flags the opposite mismatch', () => {
+  const score = makeScore();
+  assert.ok(normalised(score) >= 61, `fixture should score high, got ${normalised(score)}`);
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult: goodSchema, contentResult: null, presenceEvidence: {}, citationEvidence: ev('ChatGPT', 6, 1, 0), context });
+  assert.ok(report.includes('诊断分达标，但实测里官网很少被引用'));
+});
+
+test('renderReport — measured results that agree with the score say so', () => {
+  const report = lowScoreReport(ev('ChatGPT', 6, 1, 0));
+  assert.ok(report.includes('实测和诊断分没有明显矛盾'));
+  assert.ok(!report.includes('实测和诊断对不上'));
+});
+
+test('renderReport — small samples get a caveat, no evidence adds nothing', () => {
+  assert.ok(lowScoreReport(ev('ChatGPT', 3, 3, 3)).includes('样本只有 3 条'));
+  assert.ok(!lowScoreReport(undefined).includes('**实测**'));
+});
+
+test('renderReport — measured block renders in English', () => {
+  const score = computeGeoScore({ robotsResult: goodRobots, llmsResult: lowLlms, schemaResult: bareSchema, contentResult: null, presenceEvidence: {} });
+  const report = renderReport(score, { robotsResult: goodRobots, llmsResult: lowLlms, schemaResult: bareSchema, contentResult: null, presenceEvidence: {}, citationEvidence: ev('ChatGPT', 9, 9, 7), context, lang: 'en' });
+  assert.ok(report.includes('**Measured**: across 9 tests'));
+  assert.ok(report.includes('Measured results and the score disagree'));
+});
+
+test('renderCitationMatrix — cited but not named shows as cited-only, not absent', () => {
+  const report = lowScoreReport([{ query: 'Q', platform: 'ChatGPT', brandMentioned: false, officialUrlCited: true, competitorsCited: [] }]);
+  assert.ok(report.includes('| Q | 🔗 仅被引 |'));
+});

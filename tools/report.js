@@ -363,6 +363,46 @@ function buildActions(scoreData, schemaResult, url, L) {
   return { p0, p1, p2 };
 }
 
+// Measured results from citationEvidence, set next to the score in the overview.
+// The score only sees on-page conditions, so when the two disagree the report says so
+// instead of letting the verdict stand alone.
+function tallyEvidence(rows) {
+  return {
+    n: rows.length,
+    mentioned: rows.filter(e => e.brandMentioned).length,
+    cited: rows.filter(e => e.officialUrlCited).length,
+  };
+}
+
+function renderMeasured(scoreData, citationEvidence, L) {
+  if (!Array.isArray(citationEvidence) || citationEvidence.length === 0) return null;
+  const M = L.measured;
+  const all = tallyEvidence(citationEvidence);
+  const pct = (a, b) => Math.round((a / b) * 100);
+  const byPlatform = [...new Set(citationEvidence.map(e => e.platform))]
+    .map(p => ({ platform: p, ...tallyEvidence(citationEvidence.filter(e => e.platform === p)) }));
+  const lines = [
+    M.line(all.n, all.mentioned, pct(all.mentioned, all.n), all.cited, pct(all.cited, all.n)),
+    M.byPlatform(byPlatform.map(p => M.platformCell(p.platform, p.cited, p.n)).join(M.joiner)),
+  ];
+
+  const normalised = Math.round((scoreData.total / scoreData.totalMax) * 100);
+  const sized = byPlatform.filter(p => p.n >= 3);   // fewer than 3 tests on a platform says little
+  const best = sized.reduce((b, p) => (!b || p.cited / p.n > b.cited / b.n ? p : b), null);
+  const notes = [];
+  if (best && best.cited / best.n >= 0.5 && normalised <= 40) {
+    notes.push(M.citedButLowScore(best.platform, best.cited, best.n));
+  } else if (all.cited / all.n <= 0.2 && normalised >= 61) {
+    notes.push(M.rarelyCitedButHighScore);
+  }
+  const mentionOnly = sized.filter(p => p.mentioned / p.n >= 0.5 && p.cited === 0).map(p => p.platform);
+  if (mentionOnly.length > 0) notes.push(M.mentionedNotCited(mentionOnly.join(M.joiner)));
+  if (sized.length >= 2 && best.cited / best.n >= 0.5 && sized.some(p => p.cited === 0)) notes.push(M.platformGap);
+  if (notes.length === 0) notes.push(M.consistent);
+  if (all.n < 5) notes.push(M.smallSample(all.n));
+  return [...lines, '', ...notes].join('\n');
+}
+
 function renderCitationMatrix(citationEvidence, L) {
   if (!Array.isArray(citationEvidence) || citationEvidence.length === 0) return null;
   const M = L.matrix;
@@ -378,6 +418,7 @@ function renderCitationMatrix(citationEvidence, L) {
       if (!entry) return '—';
       if (entry.brandMentioned && entry.officialUrlCited) return M.citedWithLink;
       if (entry.brandMentioned) return M.mentioned;
+      if (entry.officialUrlCited) return M.citedOnly;
       return M.absent;
     });
     return `| ${q} | ${cells.join(' | ')} |`;
@@ -492,6 +533,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     return `${E.pageLabel} (${articleUrl})  ${found.join('  ')}  Schema: ${schemas}`;
   })();
 
+  const measured = renderMeasured(scoreData, citationEvidence, L);
   const lines = [
     R.title(brand, date),
     url ? `${R.targetSite}: ${url}` : '',
@@ -503,6 +545,7 @@ function renderReport(scoreData, { robotsResult, llmsResult, schemaResult, conte
     '',
     narrative,
     '',
+    ...(measured ? [measured, ''] : []),
     R.scoreHeader,
     '',
     R.tableHead,
