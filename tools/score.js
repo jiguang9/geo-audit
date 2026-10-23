@@ -28,7 +28,7 @@ function scoreStructure(schemaResult, contentResult) {
   // FAQ / Q&A (0-8)
   let faqScore = 0;
   if (s.hasFaqSchema) faqScore += 8;
-  else if (s.hasFaqClass || s.detailsBlocks > 0) faqScore += 4;
+  else if (s.hasFaqClass || s.faqDetailsBlocks > 0) faqScore += 4;
   else if (cs && cs.evidence && cs.evidence.questionCount >= 3) faqScore += 2;
 
   // Tables & lists (0-6)

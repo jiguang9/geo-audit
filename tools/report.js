@@ -272,16 +272,19 @@ function buildActions(scoreData, schemaResult, url, L) {
         `  "knowsAbout": [${A.canonical.topics.map(t => `"${t}"`).join(', ')}]`,
         '}',
         '</script>',
+        '```',
       ].join('\n'),
     });
   }
 
   const hasFaqSchema = s.found && s.found.includes('FAQPage');
   if (!hasFaqSchema && d.structure.breakdown.faqScore < 6) {
+    // faqScore 4 = an FAQ section exists without schema; lower = no FAQ section found
+    const hasFaqSection = d.structure.breakdown.faqScore >= 4;
     p0.push({
-      title: A.faq.title,
+      title: hasFaqSection ? A.faq.title : A.faq.titleNoSection,
       body: [
-        A.faq.intro,
+        hasFaqSection ? A.faq.intro : A.faq.introNoSection,
         '',
         '```html',
         '<script type="application/ld+json">',
@@ -302,6 +305,7 @@ function buildActions(scoreData, schemaResult, url, L) {
         '  ]',
         '}',
         '</script>',
+        '```',
       ].join('\n'),
     });
   }
@@ -327,6 +331,7 @@ function buildActions(scoreData, schemaResult, url, L) {
         `  "mainEntityOfPage": { "@type": "WebPage", "@id": "${A.blogPosting.articleUrl}" }`,
         '}',
         '</script>',
+        '```',
       ].join('\n'),
     });
   }

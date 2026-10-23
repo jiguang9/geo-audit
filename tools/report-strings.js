@@ -98,6 +98,8 @@ const zh = {
     faq: {
       title: '给首页 FAQ 补 FAQPage JSON-LD',
       intro: '首页有 FAQ 内容但缺 `FAQPage` schema，AI 系统无法结构化读取问答对。',
+      titleNoSection: '首页加一组 FAQ，并补 FAQPage JSON-LD',
+      introNoSection: '首页没有识别到 FAQ 区块。问答对是 AI 最容易直接引用的格式，建议加 3–5 个用户常问的问题，同时补 `FAQPage` schema。',
       q1: '[问题 1]', a1: '[答案 1]', q2: '[问题 2]', a2: '[答案 2]',
     },
     blogPosting: {
@@ -306,6 +308,8 @@ const en = {
     faq: {
       title: 'Add FAQPage JSON-LD to the homepage FAQ',
       intro: 'The homepage has FAQ content but no `FAQPage` schema, so AI systems cannot read the Q&A pairs in a structured way.',
+      titleNoSection: 'Add an FAQ section with FAQPage JSON-LD to the homepage',
+      introNoSection: 'No FAQ section was detected on the homepage. Q&A pairs are the format AI systems quote most readily, so add 3–5 common questions and mark them up with `FAQPage` schema.',
       q1: '[Question 1]', a1: '[Answer 1]', q2: '[Question 2]', a2: '[Answer 2]',
     },
     blogPosting: {

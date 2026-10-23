@@ -85,10 +85,11 @@ function analyzeContentStructure(html, url) {
     }
   }
 
+  const hasFaqContent = structural.hasFaqSchema || structural.hasFaqClass || structural.faqDetailsBlocks > 0;
   const presentTypes = new Set(quotableBlocks.map(b => b.type));
   if (hasStepBlocks) presentTypes.add('step');
   if (hasCitations) presentTypes.add('citation');
-  if (structural.hasFaqSchema || structural.hasFaqClass) presentTypes.add('faq');
+  if (hasFaqContent) presentTypes.add('faq');
   const missingBlocks = ['definition', 'statistic', 'step', 'citation', 'faq', 'qa'].filter(t => !presentTypes.has(t));
 
   const extractableBlockCount = [
@@ -97,7 +98,7 @@ function analyzeContentStructure(html, url) {
     hasStatistics,
     hasCitations,
     hasDefinitionBlocks,
-    structural.hasFaqSchema || structural.hasFaqClass,
+    hasFaqContent,
   ].filter(Boolean).length;
 
   // Confidence: based on how many signals we have
@@ -124,7 +125,7 @@ function analyzeContentStructure(html, url) {
       avgWordsPerParagraph,
       structuralElements,
       headingDepth,
-      hasFaq: structural.hasFaqSchema || structural.hasFaqClass || structural.detailsBlocks > 0,
+      hasFaq: hasFaqContent,
     },
     extractableBlocks: {
       hasFirstScreenDefinition,

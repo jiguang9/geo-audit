@@ -149,3 +149,33 @@ test('analyzeContentStructure — returns url in result', () => {
   const r = analyzeContentStructure(HTML_WITH_STEPS, 'https://example.com/');
   assert.equal(r.url, 'https://example.com/');
 });
+
+// ── <details> blocks: only question-style summaries count as FAQ ─────────────
+
+const HTML_CASE_STUDY_DETAILS = `
+<html><body>
+<h1>案例</h1>
+<details class="project-more"><summary>展开完整问题 / 行动 / 成果</summary><p>问题、行动和成果的详细说明。</p></details>
+<details class="project-more"><summary>展开完整问题 / 行动 / 成果</summary><p>另一个项目的详细说明。</p></details>
+</body></html>
+`;
+
+const HTML_QUESTION_DETAILS = `
+<html><body>
+<h1>常见问题</h1>
+<details><summary>GEO 和 SEO 有什么区别？</summary><p>SEO 解决排名，GEO 解决被 AI 引用。</p></details>
+<details><summary>How long does an audit take?</summary><p>A few seconds per page.</p></details>
+</body></html>
+`;
+
+test('analyzeContentStructure — collapsible case studies are not counted as FAQ', () => {
+  const r = analyzeContentStructure(HTML_CASE_STUDY_DETAILS, 'https://example.com/');
+  assert.equal(r.evidence.hasFaq, false, 'non-question <details> must not count as FAQ');
+  assert.ok(r.missingBlocks.includes('faq'), 'faq should stay in missingBlocks');
+});
+
+test('analyzeContentStructure — question-style <details> count as FAQ', () => {
+  const r = analyzeContentStructure(HTML_QUESTION_DETAILS, 'https://example.com/faq');
+  assert.equal(r.evidence.hasFaq, true, 'question <summary> should count as FAQ');
+  assert.ok(!r.missingBlocks.includes('faq'), 'faq should not be in missingBlocks');
+});

@@ -54,6 +54,18 @@ function extractMicrodataTypes(html) {
   return [...types];
 }
 
+// A <details> block only counts as FAQ when its <summary> reads like a question;
+// collapsible case studies or "show more" toggles are not Q&A content.
+const FAQ_SUMMARY_QUESTION = /[?？]|^(what|how|why|when|where|who|which|is|are|can|does|do|should)\b|是什么|什么是|怎么|为什么|如何|哪些|怎样|多少|是否|能否|吗/i;
+
+function countFaqDetailsBlocks(html) {
+  const blocks = html.match(/<details[\s\S]*?<\/details>/gi) || [];
+  return blocks.filter(block => {
+    const m = /<summary[^>]*>([\s\S]*?)<\/summary>/i.exec(block);
+    return m && FAQ_SUMMARY_QUESTION.test(m[1].replace(/<[^>]+>/g, '').trim());
+  }).length;
+}
+
 function extractStructuralElements(html) {
   const count = (re) => (html.match(re) || []).length;
   return {
@@ -61,6 +73,7 @@ function extractStructuralElements(html) {
     orderedLists: count(/<ol[\s\S]*?<\/ol>/gi),
     unorderedLists: count(/<ul[\s\S]*?<\/ul>/gi),
     detailsBlocks: count(/<details[\s\S]*?<\/details>/gi),
+    faqDetailsBlocks: countFaqDetailsBlocks(html),
     paragraphs: count(/<p[\s\S]*?<\/p>/gi),
     hasFaqClass: /class=["'][^"']*faq[^"']*["']|id=["'][^"']*faq[^"']*["']/i.test(html),
     hasFaqSchema: /"@type"\s*:\s*"FAQPage"/i.test(html),

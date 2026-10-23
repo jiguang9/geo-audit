@@ -338,3 +338,41 @@ test('report-strings — zh and en locales expose identical shapes', () => {
   }
   assert.deepEqual(shapeOf(STRINGS.zh), shapeOf(STRINGS.en), 'zh and en must have the same keys and value types');
 });
+
+// ── Action code blocks and FAQ wording ───────────────────────────────────────
+
+const bareSchema = {
+  headings: { h1Count: 1, h2Count: 0, h3Count: 0, hasProperHierarchy: false },
+  schema: { found: [], missing: ['Organization', 'FAQPage'] },
+  structure: { tables: 0, orderedLists: 0, unorderedLists: 0, detailsBlocks: 2, faqDetailsBlocks: 0, hasFaqClass: false, hasFaqSchema: false },
+  authorDate: { hasAuthor: false, hasPublishDate: false, hasModifiedDate: false },
+  meta: { title: 'Test', description: 'Test.', canonical: null },
+  externalLinks: 0,
+};
+
+function renderWith(schemaResult, lang) {
+  const score = computeGeoScore({ robotsResult: goodRobots, llmsResult: goodLlms, schemaResult, contentResult: null, presenceEvidence: {} });
+  return renderReport(score, { robotsResult: goodRobots, llmsResult: goodLlms, schemaResult, contentResult: null, presenceEvidence: {}, context, lang });
+}
+
+test('renderReport — every action code block is closed', () => {
+  for (const lang of ['zh', 'en']) {
+    const report = renderWith(bareSchema, lang);
+    assert.ok(report.includes('"@type": "Organization"'), 'canonical action should render');
+    assert.ok(report.includes('"@type": "FAQPage"'), 'FAQ action should render');
+    assert.ok(report.includes('"@type": "BlogPosting"'), 'BlogPosting action should render');
+    const fences = report.split('\n').filter(l => l.startsWith('```')).length;
+    assert.equal(fences % 2, 0, `${lang} report has an unclosed code block`);
+  }
+});
+
+test('renderReport — FAQ action does not claim FAQ content when none was found', () => {
+  const report = renderWith(bareSchema);
+  assert.ok(report.includes('首页没有识别到 FAQ 区块'), 'should say no FAQ section was found');
+  assert.ok(!report.includes('首页有 FAQ 内容'), 'should not claim FAQ content exists');
+});
+
+test('renderReport — FAQ action mentions existing FAQ section when one was found', () => {
+  const report = renderWith({ ...bareSchema, structure: { ...bareSchema.structure, faqDetailsBlocks: 2 } });
+  assert.ok(report.includes('首页有 FAQ 内容'), 'should note the existing FAQ section');
+});
