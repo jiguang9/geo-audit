@@ -11,6 +11,8 @@ const DEFINITION_PATTERN = /\b(is|refers to|means|defined as|is a|is an)\b/i;
 const DEFINITION_PATTERN_ZH = /[一-龥](是指|即|指的是|是一种|是一个)/;
 const STAT_PATTERN = /\d+(\.\d+)?%|\d[\d,]*\s*(万|百万|亿|billion|million|thousand)/i;
 const SOURCE_PATTERN = /来源[：:]\s*|数据来自|Source:\s*|according to|cited from|引用自/i;
+// A '.' between two digits is a decimal point (1.7 万+, v1.1.0), not a sentence end
+const SENTENCE_RE = /(?:[^.!?。！？]|(?<=\d)\.(?=\d))+[.!?。！？]+/g;
 // Match step-prefixed list items (tested per-item, no ^ needed against full text)
 const STEP_ITEM_RE = /(^|\s)(step\s*\d|第\s*[一二三四五六七八九十\d]+\s*步?|[一二三四五六七八九十]、|\d+\.\s)/i;
 
@@ -30,7 +32,7 @@ function analyzeContentStructure(html, url) {
   const headings = extractHeadings(html);
 
   // Sentence-level heuristics
-  const sentences = text.match(/[^.!?。！？]+[.!?。！？]+/g) || [];
+  const sentences = text.match(SENTENCE_RE) || [];
   const questionCount = sentences.filter(s => QUESTION_WORDS.test(s) || QUESTION_WORDS_ZH.test(s)).length;
   const definitionCount = sentences.filter(s => DEFINITION_PATTERN.test(s) || DEFINITION_PATTERN_ZH.test(s)).length;
   const statCount = sentences.filter(s => STAT_PATTERN.test(s)).length;

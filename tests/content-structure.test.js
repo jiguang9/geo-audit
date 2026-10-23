@@ -179,3 +179,21 @@ test('analyzeContentStructure — question-style <details> count as FAQ', () => 
   assert.equal(r.evidence.hasFaq, true, 'question <summary> should count as FAQ');
   assert.ok(!r.missingBlocks.includes('faq'), 'faq should not be in missingBlocks');
 });
+
+// ── Sentence splitting keeps decimal numbers intact ─────────────────────────
+
+const HTML_DECIMAL_STATS = `
+<html><body>
+<h1>项目成果</h1>
+<p>成果：小红书垂直精准粉丝 1.7 万+、全网垂直粉丝 3 万+，内容知识库与数据看板已跑通。</p>
+<p>Conversion rose to 3.5% after the v1.1.0 release shipped last quarter.</p>
+</body></html>
+`;
+
+test('analyzeContentStructure — decimal points are not treated as sentence ends', () => {
+  const r = analyzeContentStructure(HTML_DECIMAL_STATS, 'https://example.com/');
+  const stats = r.quotableBlocks.filter(b => b.type === 'statistic').map(b => b.text);
+  assert.ok(stats.some(t => t.includes('1.7 万+')), `statistic should keep "1.7 万+", got ${JSON.stringify(stats)}`);
+  assert.ok(stats.some(t => t.includes('3.5%') && t.includes('v1.1.0')), `statistic should keep "3.5%" and "v1.1.0", got ${JSON.stringify(stats)}`);
+  assert.ok(!stats.some(t => /^7 万\+/.test(t)), 'must not start mid-number');
+});
